@@ -1,0 +1,56 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using TtsWebApp.Services
+@inject OpenAiTtsService TtsService
+
+<PageTitle>TTS Web App</PageTitle>
+
+<h3>Text to Speech Converter</h3>
+
+<textarea @bind="inputText" rows="5" style="width:100%" placeholder="Enter text to convert to speech"></textarea>
+<br />
+<button @onclick="GenerateAudio" disabled="@isLoading">
+    @(isLoading ? "Generating..." : "Generate Audio")
+</button>
+
+@if (errorMessage is not null)
+{
+    <p style="color:#c0392b">@errorMessage</p>
+}
+
+@if (audioDataUrl is not null)
+{
+    <p><audio controls autoplay src="@audioDataUrl"></audio></p>
+}
+
+@code {
+    private string inputText = "";
+    private bool isLoading;
+    private string? audioDataUrl;
+    private string? errorMessage;
+
+    private async Task GenerateAudio()
+    {
+        if (string.IsNullOrWhiteSpace(inputText))
+        {
+            errorMessage = "Please enter some text.";
+            return;
+        }
+
+        errorMessage = null;
+        isLoading = true;
+        try
+        {
+            var bytes = await TtsService.SynthesizeSpeechAsync(inputText);
+            audioDataUrl = $"data:audio/mpeg;base64,{Convert.ToBase64String(bytes)}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
