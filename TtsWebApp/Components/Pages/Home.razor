@@ -3,51 +3,79 @@
 @using TtsWebApp.Services
 @inject OpenAiTtsService TtsService
 
+<!-- ==================== 1. 페이지 타이틀 ====================-->
 <PageTitle>TTS Web App</PageTitle>
 
+<!-- ==================== 2. 제목 ====================-->
 <h3>Text to Speech Converter</h3>
 
+<!-- ==================== 3. 텍스트 입력 영역 ====================-->
 <textarea @bind="inputText" rows="5" style="width:100%" placeholder="Enter text to convert to speech"></textarea>
 <br />
+
+<!-- ==================== 4. 음성 선택 드롭다운 ====================-->
+<label>
+    Voice:
+    <select @bind="selectedVoice">
+        @foreach (var voice in OpenAiTtsService.AvailableVoices)
+        {
+            <option value="@voice">@voice</option>
+        }
+    </select>
+</label>
+<br />
+
+<!-- ==================== 5. 음성 생성 버튼 ====================-->
 <button @onclick="GenerateAudio" disabled="@isLoading">
     @(isLoading ? "Generating..." : "Generate Audio")
 </button>
 
+<!-- ==================== 6. 에러 메시지 표시 ====================-->
 @if (errorMessage is not null)
 {
     <p style="color:#c0392b">@errorMessage</p>
 }
 
+<!-- ==================== 7. 오디오 플레이어 ====================-->
 @if (audioDataUrl is not null)
 {
     <p><audio controls autoplay src="@audioDataUrl"></audio></p>
 }
 
+<!-- ==================== 8. C# 로직 ====================-->
 @code {
+    // 8-1. 상태 변수
     private string inputText = "";
+    private string selectedVoice = "alloy";
     private bool isLoading;
     private string? audioDataUrl;
     private string? errorMessage;
 
+    // 8-2. 음성 생성 메서드
     private async Task GenerateAudio()
     {
+        // 8-2-1. 입력값 검증
         if (string.IsNullOrWhiteSpace(inputText))
         {
             errorMessage = "Please enter some text.";
             return;
         }
 
+        // 8-2-2. 로딩 상태 설정
         errorMessage = null;
         isLoading = true;
         try
         {
-            var bytes = await TtsService.SynthesizeSpeechAsync(inputText);
+            // 8-2-3. API 호출
+            var bytes = await TtsService.SynthesizeSpeechAsync(inputText, selectedVoice);
             audioDataUrl = $"data:audio/mpeg;base64,{Convert.ToBase64String(bytes)}";
         }
+        // 8-2-4. 에러 처리
         catch (Exception ex)
         {
             errorMessage = $"Error occurred: {ex.Message}";
         }
+        // 8-2-5. 로딩 완료
         finally
         {
             isLoading = false;
