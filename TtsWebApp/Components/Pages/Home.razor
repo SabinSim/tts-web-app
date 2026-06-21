@@ -6,41 +6,46 @@
 <!-- ==================== 1. 페이지 타이틀 ====================-->
 <PageTitle>TTS Web App</PageTitle>
 
-<!-- ==================== 2. 제목 ====================-->
-<h3>Text to Speech Converter</h3>
+<!-- ==================== 2. 메인 카드 컨테이너 ====================-->
+<div class="tts-card">
+    <!-- ==================== 3. 제목 ====================-->
+    <h3>Text to Speech Converter</h3>
 
-<!-- ==================== 3. 텍스트 입력 영역 ====================-->
-<textarea @bind="inputText" rows="5" style="width:100%" placeholder="Enter text to convert to speech"></textarea>
-<br />
+    <!-- ==================== 4. 텍스트 입력 영역 ====================-->
+    <textarea class="tts-input" @bind="inputText" rows="6" placeholder="Enter text to convert (Korean, English, German, etc.)"></textarea>
 
-<!-- ==================== 4. 음성 선택 드롭다운 ====================-->
-<label>
-    Voice:
-    <select @bind="selectedVoice">
-        @foreach (var voice in OpenAiTtsService.AvailableVoices)
-        {
-            <option value="@voice">@voice</option>
-        }
-    </select>
-</label>
-<br />
+    <!-- ==================== 5. 컨트롤 영역 (음성 선택 + 버튼) ====================-->
+    <div class="tts-controls">
+        <label class="tts-voice-label">
+            Voice
+            <select class="tts-select" @bind="selectedVoice">
+                @foreach (var voice in OpenAiTtsService.AvailableVoices)
+                {
+                    <option value="@voice">@voice</option>
+                }
+            </select>
+        </label>
+        
+        <button class="tts-button" @onclick="GenerateAudio" disabled="@isLoading">
+            @(isLoading ? "Generating..." : "Generate Audio")
+        </button>
+    </div>
 
-<!-- ==================== 5. 음성 생성 버튼 ====================-->
-<button @onclick="GenerateAudio" disabled="@isLoading">
-    @(isLoading ? "Generating..." : "Generate Audio")
-</button>
+    <!-- ==================== 6. 에러 메시지 표시 ====================-->
+    @if (errorMessage is not null)
+    {
+        <p class="tts-error">@errorMessage</p>
+    }
 
-<!-- ==================== 6. 에러 메시지 표시 ====================-->
-@if (errorMessage is not null)
-{
-    <p style="color:#c0392b">@errorMessage</p>
-}
+    <!-- ==================== 7. 오디오 플레이어 ====================-->
+    @if (audioDataUrl is not null)
+    {
+        <audio class="tts-audio" controls autoplay src="@audioDataUrl"></audio>
+    }
+</div>
 
-<!-- ==================== 7. 오디오 플레이어 ====================-->
-@if (audioDataUrl is not null)
-{
-    <p><audio controls autoplay src="@audioDataUrl"></audio></p>
-}
+
+
 
 <!-- ==================== 8. C# 로직 ====================-->
 @code {
