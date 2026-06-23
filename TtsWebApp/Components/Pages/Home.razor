@@ -7,122 +7,143 @@
 
 <div class="tts-card">
     <!-- MODIFIED: heading translated from Korean ("텍스트 음성 변환 (TTS)") to English -->
-    <h3>Text to Speech Converter</h3>
-
-    <!-- MODIFIED: placeholder translated from Korean to English -->
-    <textarea class="tts-input" @bind="inputText" @bind:event="oninput" rows="6" placeholder="Enter text to convert (any language: English, German, Korean, etc.)"></textarea>
+    <div class="tts-header">
+        <h2>Text to Speech</h2>
+        <p>Convert text into natural-sounding speech with OpenAI voices.</p>
+    </div>
+    
+    <label class="tts-label"for="tts-textarea">Your text</label>
+    <textarea id="tts-textarea"
+                class="tts-input"
+                @bind="inputText"
+                @bind:event="oninput"
+                rows="6"
+                placeholder="Type or paste text in any language (English, German, Korean, etc.)"></textarea>
+    
 
     <!-- MODIFIED: character counter text translated from Korean ("@inputText.Length / @MaxChars 자") to English -->
     <p class="tts-charcount @(IsOverLimit ? "tts-charcount-over" : "")">
         @inputText.Length / @MaxChars characters
         @if (IsOverLimit)
         {
-            <!-- MODIFIED: warning text translated from Korean ("글자 수를 줄여주세요") to English -->
             <span> — please shorten your text</span>
         }
     </p>
 
-    <div class="tts-controls">
-        <label class="tts-voice-label">
-            <!-- MODIFIED: label translated from Korean ("음성") to English -->
-            Voice
-            <select class="tts-select" @bind="selectedVoice">
-                @foreach (var voice in OpenAiTtsService.AvailableVoices)
-                {
-                    <option value="@voice">@voice</option>
-                }
-            </select>
-        </label>
-
-        <!-- MODIFIED: button text translated from Korean ("생성 중...", "음성 생성") to English -->
-        <button class="tts-button" @onclick="GenerateAudio" disabled="@(isLoading || IsOverLimit)">
-            @(isLoading ? "Generating..." : "Generate speech")
-        </button>
+    <div class="tts-voice-group">
+        <span class="tts-label">Voice</span>
+        <select class="tts-select" @bind="selectedVoice">
+            @foreach (var voice in OpenAiTtsService.AvailableVoices)
+            {
+                <option value="@voice">@voice</option>
+            }
+        </select>
     </div>
 
-    @if (errorMessage is not null)
-    {
-        <p class="tts-error">@errorMessage</p>
-    }
+        <!-- MODIFIED: button text translated from Korean ("생성 중...", "음성 생성") to English -->
+    <button class="tts-button" @onclick="GenerateAudio" disabled="@(isLoading || IsOverLimit)">
+        @if (isLoading)
+        {
+            <span class="tts-spinner"></span>
+            <span>Generating...</span>
+        }
+        else
+        {
+            <span>Generate speech</span>
+        }
+    </button>
 
-    @if (audioDataUrl is not null)
-    {
+    </div>
+
+@if (errorMessage is not null)
+{
+    <!-- MODIFIED: error is now displayed inside a styled alert box -->
+    <p class="tts-error">⚠ @errorMessage</p>
+}
+ 
+@if (audioDataUrl is not null)
+{
+    <!-- ADDED: "Latest output" label above the audio player -->
+    <div class="tts-audio-section">
+        <div class="tts-audio-label">Latest output</div>
         <audio class="tts-audio" controls autoplay src="@audioDataUrl"></audio>
-    }
-
-    @if (history.Count > 0)
-    {
-        <div class="tts-history">
-            <!-- MODIFIED: heading translated from Korean ("변환 기록") to English -->
+    </div>
+}
+ 
+@if (history.Count > 0)
+{
+    <div class="tts-history">
+        <!-- MODIFIED: history heading is now in a flex row (label left-aligned) -->
+        <div class="tts-history-heading">
             <h4>History</h4>
-            @foreach (var item in history)
-            {
-                <div class="tts-history-item">
-                    <div class="tts-history-meta">
-                        <span class="tts-history-text" title="@item.Text">@Preview(item.Text)</span>
-                        <span class="tts-history-voice">@item.Voice · @item.CreatedAt.ToString("HH:mm:ss")</span>
-                    </div>
-                    <audio controls src="@item.AudioDataUrl"></audio>
-                    <!-- MODIFIED: aria-label translated from Korean ("삭제") to English -->
-                    <button class="tts-history-delete" @onclick="() => DeleteHistoryItem(item)" aria-label="Delete">✕</button>
-                </div>
-            }
         </div>
-    }
-</div>
+ 
+        @foreach (var item in history)
+        {
+            <!-- MODIFIED: each item is now a card (grid layout) with a voice badge -->
+            <div class="tts-history-item">
+                <div class="tts-history-meta">
+                    <span class="tts-history-text" title="@item.Text">@Preview(item.Text)</span>
+                    <span class="tts-history-voice">
+                        <span class="tts-history-badge">@item.Voice</span>
+                        @item.CreatedAt.ToString("HH:mm:ss")
+                    </span>
+                </div>
+                <audio controls src="@item.AudioDataUrl"></audio>
+                <button class="tts-history-delete" @onclick="() => DeleteHistoryItem(item)" aria-label="Delete">✕</button>
+            </div>
+        }
+    </div>
+}
+
 
 @code {
     private const int MaxChars = 4096;
-
+ 
     private string inputText = "";
     private string selectedVoice = "alloy";
     private bool isLoading;
     private string? audioDataUrl;
     private string? errorMessage;
-
+ 
     private bool IsOverLimit => inputText.Length > MaxChars;
-
+ 
     // History entry for one past conversion: the source text, voice used,
     // resulting audio (as a data URL) and the time it was generated.
     private record HistoryItem(string Text, string Voice, string AudioDataUrl, DateTime CreatedAt);
-
+ 
     // In-memory only — cleared on page refresh / app restart.
     private List<HistoryItem> history = new();
-
+ 
     private static string Preview(string text) =>
-        text.Length <= 40 ? text : text[..40] + "…";
-
-    // ADDED: removes a single history entry without touching the others
+        text.Length <= 45 ? text : text[..45] + "…";
+ 
     private void DeleteHistoryItem(HistoryItem item) => history.Remove(item);
-
+ 
     private async Task GenerateAudio()
     {
         if (string.IsNullOrWhiteSpace(inputText))
         {
-            // MODIFIED: error message translated from Korean ("텍스트를 입력하세요.") to English
             errorMessage = "Please enter some text.";
             return;
         }
-
+ 
         if (IsOverLimit)
         {
-            // MODIFIED: error message translated from Korean to English
             errorMessage = $"Text exceeds {MaxChars} characters ({inputText.Length} characters).";
             return;
         }
-
+ 
         errorMessage = null;
         isLoading = true;
         try
         {
             var bytes = await TtsService.SynthesizeSpeechAsync(inputText, selectedVoice);
             audioDataUrl = $"data:audio/mpeg;base64,{Convert.ToBase64String(bytes)}";
-            // ADDED: keep a record of this conversion in the history list (most recent first)
             history.Insert(0, new HistoryItem(inputText, selectedVoice, audioDataUrl, DateTime.Now));
         }
         catch (Exception ex)
         {
-            // MODIFIED: error message translated from Korean ("오류가 발생했습니다") to English
             errorMessage = $"An error occurred: {ex.Message}";
         }
         finally
