@@ -24,8 +24,16 @@ public class OpenAiTtsService
         "alloy", "ash", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"
     };
 
+    public static readonly string[] AvailableModels =
+        { "tts-1", "tts-1-hd" };
+
     // ==================== 3. 음성 합성 메서드 ====================
-    public async Task<byte[]> SynthesizeSpeechAsync(string text, string? voice = null, CancellationToken ct = default)
+    public async Task<byte[]> SynthesizeSpeechAsync(
+        string text, 
+        string? voice = null, 
+        string? model = null,
+        float speed = 1.0f,
+        CancellationToken ct = default)
     {
         // 3-1. API 키 검증
         var apiKey = _config["OpenAI:ApiKey"];
@@ -38,18 +46,27 @@ public class OpenAiTtsService
         }
 
         // 3-2. 모델 및 음성 설정
-        var model = _config["OpenAI:Model"] ?? "tts-1";
-        var resolvedVoice = voice ?? _config["OpenAI:Voice"] ?? "alloy";
+        var resolvedModel = string.IsNullOrWhiteSpace(model)
+            ? (_config["OpenAI:Model"] ?? "tts-1")
+            : model;
+ 
+        var resolvedVoice = string.IsNullOrWhiteSpace(voice)
+            ? (_config["OpenAI:Voice"] ?? "alloy")
+            : voice;
+
+        var clampedSpeed = Math.Clamp(speed, 0.25f, 4.0f);
+        
 
         // 3-3. HTTP 요청 구성
         using var request = new HttpRequestMessage(HttpMethod.Post, "v1/audio/speech");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         request.Content = JsonContent.Create(new
         {
-            model,
+            model = resolvedModel,
             voice = resolvedVoice,
             input = text,
-            response_format = "mp3"
+            response_format = "mp3",
+            speed = clampedSpeed
         });
 
         // 3-4. API 호출

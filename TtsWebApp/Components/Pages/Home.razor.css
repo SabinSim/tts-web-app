@@ -105,21 +105,155 @@
     font-weight: 600;
 }
 
-/* ── Controls row (voice + button) ─────────────────────────── */
-.tts-controls {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    flex-wrap: wrap;
+/* ── Settings 섹션 (추가됨: 모델/음성/속도 그룹 전체 컨테이너) ── */
+.tts-settings {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: start;
+    gap: 20px 24px;
+    margin-bottom: 20px;
+    padding: 18px 20px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
 }
 
-/* MODIFIED: voice picker is now a self-contained block with its own label */
+/* 추가됨: 개별 설정 항목 래퍼 (label + control) */
+.tts-setting-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 추가됨: 모델 선택 토글 버튼 그룹 */
+.tts-model-toggle {
+    display: flex;
+    gap: 6px;
+}
+
+/* 추가됨: 모델 토글 개별 버튼 */
+.tts-model-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font);
+    color: var(--text-secondary);
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+/* 추가됨: 선택된 모델 버튼 강조 스타일 */
+.tts-model-btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: #eff2ff;
+    font-weight: 600;
+}
+
+.tts-model-btn:hover:not(.active) {
+    border-color: #b0bcf8;
+    background: var(--bg-hover);
+}
+
+/* 추가됨: HD 뱃지 (tts-1-hd 버튼 안의 작은 레이블) */
+.tts-model-badge {
+    display: inline-block;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+}
+
+/* ── 속도 슬라이더 (추가됨) ────────────────────────────────── */
+.tts-speed-group {
+    grid-column: 1 / -1;
+}
+
+/* 추가됨: 현재 속도 값 표시 (라벨 옆에 인라인으로) */
+.tts-speed-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-left: 6px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* 추가됨: range input 기본 스타일 재정의 */
+.tts-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(
+            to right,
+            var(--accent) 0%,
+            var(--accent) calc((var(--val, 1) - 0.25) / 3.75 * 100%),
+            var(--border) calc((var(--val, 1) - 0.25) / 3.75 * 100%)
+    );
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+.tts-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(90, 122, 249, 0.4);
+    cursor: pointer;
+    transition: transform var(--transition);
+}
+
+.tts-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+.tts-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(90, 122, 249, 0.4);
+    cursor: pointer;
+}
+
+/* 추가됨: 슬라이더 아래 눈금 레이블 */
+.tts-slider-marks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ── Controls row (Generate 버튼) ──────────────────────────── */
+.tts-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+/* 수정됨: voice picker를 settings 섹션으로 이동했으므로 기존 voice-group 제거 후 select만 유지 */
 .tts-voice-group {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    flex: 1;
-    min-width: 160px;
 }
 
 .tts-select {
@@ -306,9 +440,35 @@
     font-weight: 600;
 }
 
+/* 추가됨: 모델명 배지 (히스토리 항목 안, 음성 배지와 구분되도록 회색 계열) */
+.tts-badge-model {
+    background: #f1f5f9;
+    color: var(--text-secondary);
+}
+
 .tts-history-item audio {
     height: 32px;
     width: 160px;
+}
+
+/* ── Clear all 버튼 (추가됨) ──────────────────────────────── */
+.tts-clear-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+    font-family: var(--font);
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.tts-clear-btn:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+    background: #fff5f5;
 }
 
 /* ── Delete button ─────────────────────────────────────────── */
@@ -338,6 +498,15 @@
     .tts-card {
         margin: 16px;
         padding: 24px 20px;
+    }
+
+    /* 추가됨: 모바일에서 settings 섹션 세로 정렬 */
+    .tts-settings {
+        grid-template-columns: 1fr;
+    }
+
+    .tts-speed-group {
+        grid-column: 1;
     }
 
     .tts-history-item {

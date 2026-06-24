@@ -6,22 +6,20 @@
 <PageTitle>TTS Web App</PageTitle>
 
 <div class="tts-card">
-    <!-- MODIFIED: heading translated from Korean ("텍스트 음성 변환 (TTS)") to English -->
+
     <div class="tts-header">
         <h2>Text to Speech</h2>
         <p>Convert text into natural-sounding speech with OpenAI voices.</p>
     </div>
-    
-    <label class="tts-label"for="tts-textarea">Your text</label>
-    <textarea id="tts-textarea"
-                class="tts-input"
-                @bind="inputText"
-                @bind:event="oninput"
-                rows="6"
-                placeholder="Type or paste text in any language (English, German, Korean, etc.)"></textarea>
-    
 
-    <!-- MODIFIED: character counter text translated from Korean ("@inputText.Length / @MaxChars 자") to English -->
+    <label class="tts-label" for="tts-textarea">Your text</label>
+    <textarea id="tts-textarea"
+              class="tts-input"
+              @bind="inputText"
+              @bind:event="oninput"
+              rows="6"
+              placeholder="Type or paste text in any language — English, German, Korean, etc."></textarea>
+
     <p class="tts-charcount @(IsOverLimit ? "tts-charcount-over" : "")">
         @inputText.Length / @MaxChars characters
         @if (IsOverLimit)
@@ -30,96 +28,149 @@
         }
     </p>
 
-    <div class="tts-voice-group">
-        <span class="tts-label">Voice</span>
-        <select class="tts-select" @bind="selectedVoice">
-            @foreach (var voice in OpenAiTtsService.AvailableVoices)
-            {
-                <option value="@voice">@voice</option>
-            }
-        </select>
-    </div>
+    @* 추가됨: 설정 섹션 (모델 선택 + 음성 선택 + 속도 슬라이더) *@
+    <div class="tts-settings">
 
-        <!-- MODIFIED: button text translated from Korean ("생성 중...", "음성 생성") to English -->
-    <button class="tts-button" @onclick="GenerateAudio" disabled="@(isLoading || IsOverLimit)">
-        @if (isLoading)
-        {
-            <span class="tts-spinner"></span>
-            <span>Generating...</span>
-        }
-        else
-        {
-            <span>Generate speech</span>
-        }
-    </button>
-
-    </div>
-
-@if (errorMessage is not null)
-{
-    <!-- MODIFIED: error is now displayed inside a styled alert box -->
-    <p class="tts-error">⚠ @errorMessage</p>
-}
- 
-@if (audioDataUrl is not null)
-{
-    <!-- ADDED: "Latest output" label above the audio player -->
-    <div class="tts-audio-section">
-        <div class="tts-audio-label">Latest output</div>
-        <audio class="tts-audio" controls autoplay src="@audioDataUrl"></audio>
-    </div>
-}
- 
-@if (history.Count > 0)
-{
-    <div class="tts-history">
-        <!-- MODIFIED: history heading is now in a flex row (label left-aligned) -->
-        <div class="tts-history-heading">
-            <h4>History</h4>
-        </div>
- 
-        @foreach (var item in history)
-        {
-            <!-- MODIFIED: each item is now a card (grid layout) with a voice badge -->
-            <div class="tts-history-item">
-                <div class="tts-history-meta">
-                    <span class="tts-history-text" title="@item.Text">@Preview(item.Text)</span>
-                    <span class="tts-history-voice">
-                        <span class="tts-history-badge">@item.Voice</span>
-                        @item.CreatedAt.ToString("HH:mm:ss")
-                    </span>
-                </div>
-                <audio controls src="@item.AudioDataUrl"></audio>
-                <button class="tts-history-delete" @onclick="() => DeleteHistoryItem(item)" aria-label="Delete">✕</button>
+        @* 추가됨: tts-1 / tts-1-hd 모델 선택 토글 *@
+        <div class="tts-setting-group">
+            <span class="tts-label">Model</span>
+            <div class="tts-model-toggle">
+                @foreach (var m in OpenAiTtsService.AvailableModels)
+                {
+                    <button class="tts-model-btn @(selectedModel == m ? "active" : "")"
+                            @onclick="() => selectedModel = m">
+                        @m
+                        @if (m == "tts-1-hd")
+                        {
+                            <span class="tts-model-badge">HD</span>
+                        }
+                    </button>
+                }
             </div>
-        }
-    </div>
-}
+        </div>
 
+        <div class="tts-setting-group">
+            <span class="tts-label">Voice</span>
+            <select class="tts-select" @bind="selectedVoice">
+                @foreach (var voice in OpenAiTtsService.AvailableVoices)
+                {
+                    <option value="@voice">@voice</option>
+                }
+            </select>
+        </div>
+
+        @* 추가됨: 재생 속도 슬라이더 (0.25 ~ 4.0, 기본값 1.0) *@
+        <div class="tts-setting-group tts-speed-group">
+            <span class="tts-label">Speed <span class="tts-speed-value">@speed.ToString("0.##")×</span></span>
+            <input type="range"
+                   class="tts-slider"
+                   min="0.25"
+                   max="4.0"
+                   step="0.25"
+                   @bind="speed"
+                   @bind:event="oninput" />
+            <div class="tts-slider-marks">
+                <span>0.25×</span>
+                <span>1×</span>
+                <span>2×</span>
+                <span>4×</span>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="tts-controls">
+        <button class="tts-button" @onclick="GenerateAudio" disabled="@(isLoading || IsOverLimit)">
+            @if (isLoading)
+            {
+                <span class="tts-spinner"></span>
+                <span>Generating…</span>
+            }
+            else
+            {
+                <span>Generate speech</span>
+            }
+        </button>
+    </div>
+
+    @if (errorMessage is not null)
+    {
+        <p class="tts-error">⚠ @errorMessage</p>
+    }
+
+    @if (audioDataUrl is not null)
+    {
+        <div class="tts-audio-section">
+            <div class="tts-audio-label">Latest output</div>
+            <audio class="tts-audio" controls autoplay src="@audioDataUrl"></audio>
+        </div>
+    }
+
+    @if (history.Count > 0)
+    {
+        <div class="tts-history">
+            <div class="tts-history-heading">
+                <h4>History</h4>
+                @* 추가됨: 히스토리 전체 삭제 버튼 *@
+                <button class="tts-clear-btn" @onclick="ClearHistory">Clear all</button>
+            </div>
+
+            @foreach (var item in history)
+            {
+                <div class="tts-history-item">
+                    <div class="tts-history-meta">
+                        <span class="tts-history-text" title="@item.Text">@Preview(item.Text)</span>
+                        <span class="tts-history-voice">
+                            <span class="tts-history-badge">@item.Voice</span>
+                            @* 추가됨: 히스토리 항목에 모델명과 속도 표시 *@
+                            <span class="tts-history-badge tts-badge-model">@item.Model</span>
+                            @item.Speed.ToString("0.##")× ·
+                            @item.CreatedAt.ToString("HH:mm:ss")
+                        </span>
+                    </div>
+                    <audio controls src="@item.AudioDataUrl"></audio>
+                    <button class="tts-history-delete" @onclick="() => DeleteHistoryItem(item)" aria-label="Delete">✕</button>
+                </div>
+            }
+        </div>
+    }
+
+</div>
 
 @code {
     private const int MaxChars = 4096;
- 
+
     private string inputText = "";
     private string selectedVoice = "alloy";
+    // 추가됨: 선택된 모델 상태 (기본값 tts-1)
+    private string selectedModel = "tts-1";
+    // 추가됨: 재생 속도 상태 (기본값 1.0)
+    private float speed = 1.0f;
     private bool isLoading;
     private string? audioDataUrl;
     private string? errorMessage;
- 
+
     private bool IsOverLimit => inputText.Length > MaxChars;
- 
-    // History entry for one past conversion: the source text, voice used,
-    // resulting audio (as a data URL) and the time it was generated.
-    private record HistoryItem(string Text, string Voice, string AudioDataUrl, DateTime CreatedAt);
- 
-    // In-memory only — cleared on page refresh / app restart.
+
+    // 수정됨: HistoryItem에 Model, Speed 필드 추가
+    private record HistoryItem(
+        string Text,
+        string Voice,
+        string Model,
+        float Speed,
+        string AudioDataUrl,
+        DateTime CreatedAt);
+
     private List<HistoryItem> history = new();
- 
+
     private static string Preview(string text) =>
         text.Length <= 45 ? text : text[..45] + "…";
- 
+
     private void DeleteHistoryItem(HistoryItem item) => history.Remove(item);
- 
+
+    // 추가됨: 히스토리 전체 삭제
+    private void ClearHistory() => history.Clear();
+
     private async Task GenerateAudio()
     {
         if (string.IsNullOrWhiteSpace(inputText))
@@ -127,20 +178,23 @@
             errorMessage = "Please enter some text.";
             return;
         }
- 
+
         if (IsOverLimit)
         {
             errorMessage = $"Text exceeds {MaxChars} characters ({inputText.Length} characters).";
             return;
         }
- 
+
         errorMessage = null;
         isLoading = true;
         try
         {
-            var bytes = await TtsService.SynthesizeSpeechAsync(inputText, selectedVoice);
+            // 수정됨: model과 speed를 서비스에 전달
+            var bytes = await TtsService.SynthesizeSpeechAsync(inputText, selectedVoice, selectedModel, speed);
             audioDataUrl = $"data:audio/mpeg;base64,{Convert.ToBase64String(bytes)}";
-            history.Insert(0, new HistoryItem(inputText, selectedVoice, audioDataUrl, DateTime.Now));
+
+            // 수정됨: 히스토리 항목에 Model, Speed 포함
+            history.Insert(0, new HistoryItem(inputText, selectedVoice, selectedModel, speed, audioDataUrl, DateTime.Now));
         }
         catch (Exception ex)
         {
