@@ -46,7 +46,7 @@ public class TranslationService
         var body = new
         {
             model = "gpt-4o-mini",
-            message = new[]
+            messages = new[]
             {
                 new { role = "system", content = systemPrompt },
                 new { role = "user", content = text }
