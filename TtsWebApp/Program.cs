@@ -20,6 +20,14 @@ builder.Services.AddHttpClient<OpenAiTtsService>(client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
+// 아래 코드는 Translation 서비스를 DI 컨테이너에 등록하는 부분입니다.
+// The code below registers the Translation service in the DI container.
+builder.Services.AddHttpClient<TranslationService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.openai.com/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 
 // ==================== 3. 애플리케이션 빌드 ====================
 
