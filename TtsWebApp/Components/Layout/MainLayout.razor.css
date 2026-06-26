@@ -47,14 +47,42 @@
     letter-spacing: -0.2px;
 }
 
-/* 추가됨: 헤더 우측 네비게이션 */
-.app-nav {
+/* 추가됨: 중앙 탭 네비게이션 */
+.app-tabs {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 3px;
 }
 
-.app-nav-link {
+.app-tab {
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.app-tab:hover:not(.active) {
+    background: #e2e8f0;
+    color: #1a1a2e;
+}
+
+/* 추가됨: 현재 활성 탭 강조 */
+.app-tab.active {
+    background: #ffffff;
+    color: #1a1a2e;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* 추가됨: GitHub 링크 (우측) */
+.app-github-link {
     padding: 6px 12px;
     font-size: 13px;
     font-weight: 500;
@@ -64,7 +92,7 @@
     transition: background 0.15s ease, color 0.15s ease;
 }
 
-.app-nav-link:hover {
+.app-github-link:hover {
     background: #f1f5f9;
     color: #1a1a2e;
 }

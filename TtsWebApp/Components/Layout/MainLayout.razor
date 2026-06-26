@@ -1,21 +1,34 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager Nav
 
+@* 수정됨: 사이드바 + NavMenu 제거, 미니멀 상단 헤더로 교체 / 탭 네비게이션 추가 *@
 <div class="app-shell">
-    
+
     <header class="app-header">
         <div class="app-header-inner">
+
             <div class="app-logo">
-                <span class ="app-logo-icon">🎤</span>
-                <span class ="app-logo-text">TTS Web App</span>
+                <span class="app-logo-icon">◎</span>
+                <span class="app-logo-text">TTS Web App</span>
             </div>
-            <nav class="app-nav">
-                <a class="app-nav-link"
-                   href="https://github.com/SabinSim/tts-web-app"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                    GitHub
+
+            @* 추가됨: TTS / Translate 탭 네비게이션 *@
+            <nav class="app-tabs">
+                <a class="app-tab @(IsActive("/") ? "active" : "")" href="/">
+                    TTS
+                </a>
+                <a class="app-tab @(IsActive("/translate") ? "active" : "")" href="/translate">
+                    Translate
                 </a>
             </nav>
+
+            <a class="app-github-link"
+               href="https://github.com/SabinSim/tts-web-app"
+               target="_blank"
+               rel="noopener noreferrer">
+                GitHub
+            </a>
+
         </div>
     </header>
 
@@ -24,3 +37,14 @@
     </main>
 
 </div>
+
+@code {
+    // 추가됨: 현재 경로와 탭 경로를 비교해 active 클래스 결정
+    private bool IsActive(string path)
+    {
+        var current = Nav.ToBaseRelativePath(Nav.Uri);
+        if (path == "/")
+            return current == "" || current == "/";
+        return ("/" + current).StartsWith(path, StringComparison.OrdinalIgnoreCase);
+    }
+}

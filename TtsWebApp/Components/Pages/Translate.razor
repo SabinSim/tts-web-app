@@ -1,4 +1,5 @@
 @page "/translate"
+@using TtsWebApp.Services
 @rendermode InteractiveServer
 @inject TranslationService TranslationSvc
 @inject NavigationManager Nav
@@ -22,7 +23,7 @@
               placeholder="Type text in any language…"></textarea>
 
     <div class="tr-controls">
-        <button class="tr-button" @onclick="Translate" disabled="@(isLoading || string.IsNullOrWhiteSpace(inputText))">
+        <button class="tr-button" @onclick="HandleTranslate" disabled="@(isLoading || string.IsNullOrWhiteSpace(inputText))">
             @if (isLoading)
             {
                 <span class="tr-spinner"></span>
@@ -87,7 +88,7 @@
     // 실제 프로덕션에서는 Scoped 서비스나 StateContainer를 사용하는 것이 더 적합
     internal static string? PendingTtsText { get; set; }
 
-    private async Task Translate()
+    private async Task HandleTranslate()
     {
         if (string.IsNullOrWhiteSpace(inputText)) return;
 

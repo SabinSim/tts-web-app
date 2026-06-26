@@ -142,6 +142,16 @@
 
     private string inputText = "";
     private string selectedVoice = "alloy";
+
+    // 추가됨: Translate 페이지에서 "Speak" 버튼으로 넘어온 텍스트가 있으면 자동으로 채워줌
+    protected override void OnInitialized()
+    {
+        if (Translate.PendingTtsText is not null)
+        {
+            inputText = Translate.PendingTtsText;
+            Translate.PendingTtsText = null;
+        }
+    }
     // 추가됨: 선택된 모델 상태 (기본값 tts-1)
     private string selectedModel = "tts-1";
     // 추가됨: 재생 속도 상태 (기본값 1.0)
