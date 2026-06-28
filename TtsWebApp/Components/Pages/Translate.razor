@@ -1,6 +1,6 @@
 @page "/translate"
-@using TtsWebApp.Services
 @rendermode InteractiveServer
+@using TtsWebApp.Services
 @inject TranslationService TranslationSvc
 @inject NavigationManager Nav
 @inject IJSRuntime JS
@@ -11,20 +11,60 @@
 
     <div class="tr-header">
         <h2>Translator</h2>
-        <p>Auto-detects your language and translates into Korean, English, and German.</p>
+        <p>Select languages, type your text, then send the result to TTS to listen with full controls.</p>
     </div>
 
-    <label class="tr-label" for="tr-textarea">Your text</label>
-    <textarea id="tr-textarea"
-              class="tr-input"
+    <div class="tr-lang-bar">
+        @foreach (var lang in TranslationSvc.Languages)
+        {
+            <button class="tr-lang-btn @(sourceLang == lang.Code ? "active" : "")"
+                    @onclick="() => sourceLang = lang.Code">
+                @lang.Label
+            </button>
+        }
+    </div>
+
+    <textarea class="tr-input"
               @bind="inputText"
               @bind:event="oninput"
               rows="5"
-              placeholder="Type text in any language…"></textarea>
+              placeholder="Enter text…"></textarea>
 
-    <div class="tr-controls">
-        <button class="tr-button" @onclick="HandleTranslate" disabled="@(isLoading || string.IsNullOrWhiteSpace(inputText))">
-            @if (isLoading)
+    <div class="tr-divider">
+        <span class="tr-divider-arrow">↓</span>
+    </div>
+
+    <div class="tr-lang-bar">
+        @foreach (var lang in TranslationSvc.Languages.Where(l => l.Code != "auto"))
+        {
+            <button class="tr-lang-btn @(targetLang == lang.Code ? "active" : "")"
+                    @onclick="() => { targetLang = lang.Code; translatedText = null; }">
+                @lang.Label
+            </button>
+        }
+    </div>
+
+    <div class="tr-result-box @(translatedText is not null ? "has-result" : "")">
+        @if (translatedText is not null)
+        {
+            <p class="tr-result-text">@translatedText</p>
+        }
+        else
+        {
+            <p class="tr-result-placeholder">Translation will appear here.</p>
+        }
+    </div>
+
+    @if (errorMessage is not null)
+    {
+        <p class="tr-error">⚠ @errorMessage</p>
+    }
+
+    <div class="tr-actions">
+
+        <button class="tr-btn-primary" @onclick="TranslateText"
+                disabled="@(isTranslating || string.IsNullOrWhiteSpace(inputText))">
+            @if (isTranslating)
             {
                 <span class="tr-spinner"></span>
                 <span>Translating…</span>
@@ -34,71 +74,49 @@
                 <span>Translate</span>
             }
         </button>
-        @if (results.Count > 0)
+
+        @if (translatedText is not null)
         {
-            @* 추가됨: 결과가 있을 때 Clear 버튼 표시 *@
-            <button class="tr-clear-btn" @onclick="Clear">Clear</button>
+            @* 수정됨: 인라인 재생 대신 TTS 페이지로 번역 결과를 넘겨서 속도/모델/음성 조절 가능하게 함 *@
+            <button class="tr-btn-tts" @onclick="SendToTts">
+                Send to TTS →
+            </button>
+
+            <button class="tr-btn-icon" @onclick="Copy" title="Copy translation">⎘</button>
         }
+
+        @if (!string.IsNullOrWhiteSpace(inputText) || translatedText is not null)
+        {
+            <button class="tr-btn-clear" @onclick="Clear">Clear</button>
+        }
+
     </div>
-
-    @if (errorMessage is not null)
-    {
-        <p class="tr-error">⚠ @errorMessage</p>
-    }
-
-    @* 추가됨: 번역 결과 카드 (언어별로 하나씩, Speak 버튼 포함) *@
-    @if (results.Count > 0)
-    {
-        <div class="tr-results">
-            @foreach (var result in results)
-            {
-                <div class="tr-result-card">
-                    <div class="tr-result-header">
-                        <span class="tr-lang-badge">@result.Language</span>
-                        <div class="tr-result-actions">
-                            @* 추가됨: 번역 텍스트를 클립보드에 복사 *@
-                            <button class="tr-action-btn"
-                                    @onclick="async () => await CopyToClipboard(result.Text)"
-                                    title="Copy">
-                                ⎘ Copy
-                            </button>
-                            @* 추가됨: 번역 텍스트를 TTS 페이지로 전달해 음성 변환 *@
-                            <button class="tr-speak-btn"
-                                    @onclick="() => SendToTts(result.Text)"
-                                    title="Send to TTS and speak">
-                                ▶ Speak
-                            </button>
-                        </div>
-                    </div>
-                    <p class="tr-result-text">@result.Text</p>
-                </div>
-            }
-        </div>
-    }
 
 </div>
 
 @code {
-    private string inputText = "";
-    private bool isLoading;
-    private string? errorMessage;
-    private List<TranslationResult> results = new();
+    private string sourceLang = "auto";
+    private string targetLang = "ko";
 
-    // 추가됨: TTS 페이지에 텍스트를 전달하기 위한 공유 상태 (static으로 세션 내 유지)
-    // 실제 프로덕션에서는 Scoped 서비스나 StateContainer를 사용하는 것이 더 적합
+    private string inputText = "";
+    private string? translatedText;
+    private string? errorMessage;
+    private bool isTranslating;
+
+    // 추가됨: TTS 페이지에 텍스트를 전달하기 위한 공유 상태
     internal static string? PendingTtsText { get; set; }
 
-    private async Task HandleTranslate()
+    private async Task TranslateText()
     {
         if (string.IsNullOrWhiteSpace(inputText)) return;
 
         errorMessage = null;
-        isLoading = true;
-        results.Clear();
+        translatedText = null;
+        isTranslating = true;
 
         try
         {
-            results = await TranslationSvc.TranslateAllAsync(inputText);
+            translatedText = await TranslationSvc.TranslateAsync(inputText, sourceLang, targetLang);
         }
         catch (Exception ex)
         {
@@ -106,27 +124,27 @@
         }
         finally
         {
-            isLoading = false;
+            isTranslating = false;
         }
+    }
+
+    // 수정됨: 번역 결과를 TTS 페이지로 전달 후 이동 (속도·모델·음성 조절 가능)
+    private void SendToTts()
+    {
+        PendingTtsText = translatedText;
+        Nav.NavigateTo("/");
+    }
+
+    private async Task Copy()
+    {
+        if (translatedText is not null)
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", translatedText);
     }
 
     private void Clear()
     {
         inputText = "";
-        results.Clear();
+        translatedText = null;
         errorMessage = null;
-    }
-
-    // 추가됨: 번역 텍스트를 TTS 페이지로 넘겨서 바로 음성 변환 가능하게 함
-    private void SendToTts(string text)
-    {
-        PendingTtsText = text;
-        Nav.NavigateTo("/");
-    }
-
-    // 추가됨: JS interop으로 클립보드에 텍스트 복사
-    private async Task CopyToClipboard(string text)
-    {
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
     }
 }
