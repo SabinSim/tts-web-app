@@ -1,7 +1,7 @@
 ﻿@page "/"
 @rendermode InteractiveServer
-@using TtsWebApp.Services
 @inject OpenAiTtsService TtsService
+@inject NavigationManager Nav
 
 <PageTitle>TTS Web App</PageTitle>
 
@@ -143,13 +143,17 @@
     private string inputText = "";
     private string selectedVoice = "alloy";
 
-    // 추가됨: Translate 페이지에서 "Speak" 버튼으로 넘어온 텍스트가 있으면 자동으로 채워줌
+    // 수정됨: Translate 페이지에서 URL 쿼리 파라미터(?text=...)로 전달된 텍스트를 받아 자동으로 채워줌
     protected override void OnInitialized()
     {
-        if (Translate.PendingTtsText is not null)
+        var uri = new Uri(Nav.Uri);
+        if (!string.IsNullOrEmpty(uri.Query))
         {
-            inputText = Translate.PendingTtsText;
-            Translate.PendingTtsText = null;
+            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            if (query.TryGetValue("text", out var textParam))
+            {
+                inputText = textParam.ToString();
+            }
         }
     }
     // 추가됨: 선택된 모델 상태 (기본값 tts-1)

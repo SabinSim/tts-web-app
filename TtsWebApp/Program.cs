@@ -9,6 +9,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // HttpClient + service registration for calling the OpenAI TTS API
+builder.Services.AddScoped<IConfiguration>(sp => sp.GetRequiredService<IConfiguration>());
 builder.Services.AddHttpClient<OpenAiTtsService>(client =>
 {
     client.BaseAddress = new Uri("https://api.openai.com/");

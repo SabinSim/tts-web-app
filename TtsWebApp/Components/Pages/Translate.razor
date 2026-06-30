@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @using TtsWebApp.Services
 @inject TranslationService TranslationSvc
+@inject OpenAiTtsService TtsService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
@@ -48,6 +49,12 @@
         @if (translatedText is not null)
         {
             <p class="tr-result-text">@translatedText</p>
+
+
+            @if (audioDataUrl is not null)
+            {
+                <audio class="tr-audio" controls autoplay src="@audioDataUrl"></audio>
+            }
         }
         else
         {
@@ -77,7 +84,18 @@
 
         @if (translatedText is not null)
         {
-            @* 수정됨: 인라인 재생 대신 TTS 페이지로 번역 결과를 넘겨서 속도/모델/음성 조절 가능하게 함 *@
+            <button class="tr-btn-speak" @onclick="Speak" disabled="@isSpeaking">
+                @if (isSpeaking)
+                {
+                    <span class="tr-spinner"></span>
+                    <span>Speaking...</span>
+                }
+                else
+                {
+                    <span>Play</span>
+                }
+            </button>
+            
             <button class="tr-btn-tts" @onclick="SendToTts">
                 Send to TTS →
             </button>
@@ -100,8 +118,10 @@
 
     private string inputText = "";
     private string? translatedText;
+    private string? audioDataUrl;
     private string? errorMessage;
     private bool isTranslating;
+    private bool isSpeaking;
 
     // 추가됨: TTS 페이지에 텍스트를 전달하기 위한 공유 상태
     internal static string? PendingTtsText { get; set; }
@@ -128,11 +148,35 @@
         }
     }
 
+    private async Task Speak()
+    {
+        if (translatedText is null) return;
+        
+        errorMessage = null;
+        audioDataUrl = null;
+        isSpeaking = true;
+        
+        try
+        {
+            var model = targetLang is "ko" or "de" ? "tts-1-hd" : "tts-1";
+            var bytes = await TtsService.SynthesizeSpeechAsync(translatedText, model: model);
+            audioDataUrl = $"data:audio/mpeg;base64,{Convert.ToBase64String(bytes)}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Speech failed: {ex.Message}";
+        }
+        finally
+        {
+            isSpeaking = false;
+        }
+    }
+
     // 수정됨: 번역 결과를 TTS 페이지로 전달 후 이동 (속도·모델·음성 조절 가능)
     private void SendToTts()
     {
-        PendingTtsText = translatedText;
-        Nav.NavigateTo("/");
+        var encoded = Uri.EscapeDataString(translatedText ?? "");
+        Nav.NavigateTo($"/?text={encoded}");
     }
 
     private async Task Copy()

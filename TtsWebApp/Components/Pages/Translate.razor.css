@@ -205,7 +205,45 @@
     cursor: default;
 }
 
-/* 수정됨: 인라인 Speak 대신 TTS 페이지로 이동하는 버튼 */
+/* 추가됨: 번역 결과 인라인 오디오 플레이어 */
+.tr-audio {
+    display: block;
+    width: 100%;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    margin-top: 10px;
+}
+
+/* 추가됨: ▶ Play 버튼 (초록 계열) */
+.tr-btn-speak {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font);
+    color: #fff;
+    background: #22c55e;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+}
+
+.tr-btn-speak:hover:not(:disabled) {
+    background: #16a34a;
+    transform: translateY(-1px);
+}
+
+.tr-btn-speak:disabled {
+    background: #86efac;
+    box-shadow: none;
+    cursor: default;
+}
+
+/* 추가됨: Send to TTS 버튼 */
 .tr-btn-tts {
     display: flex;
     align-items: center;
