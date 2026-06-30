@@ -3,13 +3,14 @@ using TtsWebApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 추가됨: .NET 10에서 IConfiguration이 Scoped로 등록되면서 ASP.NET Core 내부 서비스와 충돌하는 문제 해결
+builder.Services.AddSingleton<Microsoft.Extensions.Configuration.IConfiguration>(builder.Configuration);
+
 // Razor components (Blazor Server, interactive render mode)
-// MODIFIED: comment translated from Korean to English
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // HttpClient + service registration for calling the OpenAI TTS API
-builder.Services.AddScoped<IConfiguration>(sp => sp.GetRequiredService<IConfiguration>());
 builder.Services.AddHttpClient<OpenAiTtsService>(client =>
 {
     client.BaseAddress = new Uri("https://api.openai.com/");

@@ -1,6 +1,5 @@
 @page "/translate"
 @rendermode InteractiveServer
-@using TtsWebApp.Services
 @inject TranslationService TranslationSvc
 @inject OpenAiTtsService TtsService
 @inject NavigationManager Nav
@@ -12,7 +11,7 @@
 
     <div class="tr-header">
         <h2>Translator</h2>
-        <p>Select languages, type your text, then send the result to TTS to listen with full controls.</p>
+        <p>Translate between Korean, English, and German — then listen or send to TTS.</p>
     </div>
 
     <div class="tr-lang-bar">
@@ -39,18 +38,29 @@
         @foreach (var lang in TranslationSvc.Languages.Where(l => l.Code != "auto"))
         {
             <button class="tr-lang-btn @(targetLang == lang.Code ? "active" : "")"
-                    @onclick="() => { targetLang = lang.Code; translatedText = null; }">
+                    @onclick="() => { targetLang = lang.Code; translatedText = null; audioDataUrl = null; }">
                 @lang.Label
             </button>
         }
     </div>
 
+    @* 수정됨: 결과 박스 안에 Play 버튼을 통합 — 결과 텍스트 옆에 작은 아이콘 버튼으로 배치 *@
     <div class="tr-result-box @(translatedText is not null ? "has-result" : "")">
         @if (translatedText is not null)
         {
-            <p class="tr-result-text">@translatedText</p>
-
-
+            <div class="tr-result-header">
+                <p class="tr-result-text">@translatedText</p>
+                <button class="tr-play-btn" @onclick="Speak" disabled="@isSpeaking" title="Play">
+                    @if (isSpeaking)
+                    {
+                        <span class="tr-play-spinner"></span>
+                    }
+                    else
+                    {
+                        <span>▶</span>
+                    }
+                </button>
+            </div>
             @if (audioDataUrl is not null)
             {
                 <audio class="tr-audio" controls autoplay src="@audioDataUrl"></audio>
@@ -84,22 +94,7 @@
 
         @if (translatedText is not null)
         {
-            <button class="tr-btn-speak" @onclick="Speak" disabled="@isSpeaking">
-                @if (isSpeaking)
-                {
-                    <span class="tr-spinner"></span>
-                    <span>Speaking...</span>
-                }
-                else
-                {
-                    <span>Play</span>
-                }
-            </button>
-            
-            <button class="tr-btn-tts" @onclick="SendToTts">
-                Send to TTS →
-            </button>
-
+            <button class="tr-btn-tts" @onclick="SendToTts">Send to TTS →</button>
             <button class="tr-btn-icon" @onclick="Copy" title="Copy translation">⎘</button>
         }
 
@@ -123,15 +118,13 @@
     private bool isTranslating;
     private bool isSpeaking;
 
-    // 추가됨: TTS 페이지에 텍스트를 전달하기 위한 공유 상태
-    internal static string? PendingTtsText { get; set; }
-
     private async Task TranslateText()
     {
         if (string.IsNullOrWhiteSpace(inputText)) return;
 
         errorMessage = null;
         translatedText = null;
+        audioDataUrl = null;
         isTranslating = true;
 
         try
@@ -148,14 +141,15 @@
         }
     }
 
+    // 추가됨: 번역 결과를 바로 한 번 재생 (한/독은 tts-1-hd 사용)
     private async Task Speak()
     {
         if (translatedText is null) return;
-        
+
         errorMessage = null;
         audioDataUrl = null;
         isSpeaking = true;
-        
+
         try
         {
             var model = targetLang is "ko" or "de" ? "tts-1-hd" : "tts-1";
@@ -172,7 +166,7 @@
         }
     }
 
-    // 수정됨: 번역 결과를 TTS 페이지로 전달 후 이동 (속도·모델·음성 조절 가능)
+    // 수정됨: static 변수 대신 URL 쿼리 파라미터로 전달 → Blazor 라우팅에서 안정적으로 동작
     private void SendToTts()
     {
         var encoded = Uri.EscapeDataString(translatedText ?? "");
@@ -189,6 +183,7 @@
     {
         inputText = "";
         translatedText = null;
+        audioDataUrl = null;
         errorMessage = null;
     }
 }
