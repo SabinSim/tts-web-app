@@ -24,6 +24,13 @@ builder.Services.AddHttpClient<TranslationService>(client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
+// 추가됨: 채팅 서비스 등록 (OpenAI Chat API, gpt-4o-mini)
+builder.Services.AddHttpClient<ChatService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.openai.com/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

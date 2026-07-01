@@ -1,0 +1,259 @@
+@page "/chat"
+@rendermode InteractiveServer
+@inject ChatService ChatSvc
+@inject OpenAiTtsService TtsService
+@inject IJSRuntime JS
+
+<PageTitle>Chat — TTS Web App</PageTitle>
+
+<div class="chat-card">
+
+    @* 추가됨: 설정 패널 (언어 / 카테고리 / 레벨 선택) *@
+    @if (!isStarted)
+    {
+        <div class="chat-setup">
+            <div class="chat-setup-header">
+                <h2>AI Language Chat</h2>
+                <p>Choose your language, topic, and level — then start practicing.</p>
+            </div>
+
+            <div class="chat-setup-section">
+                <span class="chat-setup-label">Language</span>
+                <div class="chat-option-bar">
+                    @foreach (var lang in ChatService.Languages)
+                    {
+                        <button class="chat-option-btn @(selectedLang == lang.Code ? "active" : "")"
+                                @onclick="() => selectedLang = lang.Code">
+                            @lang.Label
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <div class="chat-setup-section">
+                <span class="chat-setup-label">Topic</span>
+                <div class="chat-option-bar">
+                    @foreach (var cat in ChatService.Categories)
+                    {
+                        <button class="chat-option-btn @(selectedCategory == cat.Code ? "active" : "")"
+                                @onclick="() => selectedCategory = cat.Code">
+                            @cat.Label
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <div class="chat-setup-section">
+                <span class="chat-setup-label">Level</span>
+                <div class="chat-option-bar">
+                    @foreach (var lv in ChatService.Levels)
+                    {
+                        <button class="chat-option-btn @(selectedLevel == lv.Code ? "active" : "")"
+                                @onclick="() => selectedLevel = lv.Code">
+                            @lv.Label
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <button class="chat-start-btn" @onclick="StartChat">
+                Start Conversation →
+            </button>
+        </div>
+    }
+    else
+    {
+        @* 추가됨: 채팅 헤더 (현재 설정 표시 + 새 대화 버튼) *@
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <h2>AI Language Chat</h2>
+                <div class="chat-badges">
+                    <span class="chat-badge">@ChatService.Languages.First(l => l.Code == selectedLang).Label</span>
+                    <span class="chat-badge">@ChatService.Categories.First(c => c.Code == selectedCategory).Label</span>
+                    <span class="chat-badge">@ChatService.Levels.First(l => l.Code == selectedLevel).Label</span>
+                </div>
+            </div>
+            <button class="chat-reset-btn" @onclick="Reset">New chat</button>
+        </div>
+
+        @* 추가됨: 메시지 목록 *@
+        <div class="chat-messages" id="chat-messages">
+            @foreach (var msg in messages)
+            {
+                <div class="chat-bubble-wrap @(msg.Role == "user" ? "user" : "assistant")">
+                    @if (msg.Role == "assistant")
+                    {
+                        <div class="chat-avatar">AI</div>
+                    }
+                    <div class="chat-bubble">
+                        <p class="chat-bubble-text">@msg.Content</p>
+                        @if (msg.Role == "assistant")
+                        {
+                            @* 추가됨: AI 메시지마다 TTS 재생 버튼 *@
+                            <div class="chat-bubble-actions">
+                                @if (ttsLoadingIndex == messages.IndexOf(msg))
+                                {
+                                    <span class="chat-tts-spinner"></span>
+                                }
+                                else
+                                {
+                                    <button class="chat-tts-btn"
+                                            @onclick="() => SpeakMessage(msg)"
+                                            title="Listen">
+                                        ▶
+                                    </button>
+                                }
+                                @if (audioUrls.TryGetValue(msg, out var url))
+                                {
+                                    <audio controls autoplay src="@url" class="chat-audio"></audio>
+                                }
+                            </div>
+                        }
+                    </div>
+                    @if (msg.Role == "user")
+                    {
+                        <div class="chat-avatar user-avatar">Me</div>
+                    }
+                </div>
+            }
+
+            @* 추가됨: AI 응답 대기 중 typing indicator *@
+            @if (isLoading)
+            {
+                <div class="chat-bubble-wrap assistant">
+                    <div class="chat-avatar">AI</div>
+                    <div class="chat-bubble chat-typing">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (errorMessage is not null)
+        {
+            <p class="chat-error">⚠ @errorMessage</p>
+        }
+
+        @* 추가됨: 메시지 입력창 *@
+        <div class="chat-input-row">
+            <textarea class="chat-input"
+                      @bind="userInput"
+                      @bind:event="oninput"
+                      @onkeydown="OnKeyDown"
+                      rows="2"
+                      placeholder="Type your message… (Enter to send, Shift+Enter for new line)"
+                      disabled="@isLoading"></textarea>
+            <button class="chat-send-btn" @onclick="SendMessage"
+                    disabled="@(isLoading || string.IsNullOrWhiteSpace(userInput))">
+                @if (isLoading)
+                {
+                    <span class="chat-send-spinner"></span>
+                }
+                else
+                {
+                    <span>Send</span>
+                }
+            </button>
+        </div>
+    }
+
+</div>
+
+@code {
+    private string selectedLang     = "de";
+    private string selectedCategory = "daily";
+    private string selectedLevel    = "beginner";
+
+    private bool isStarted;
+    private bool isLoading;
+    private int  ttsLoadingIndex = -1;
+    private string? errorMessage;
+    private string userInput = "";
+
+    // 추가됨: 대화 이력 (ChatService에 그대로 전달)
+    private List<ChatMessage> messages = new();
+
+    // 추가됨: 메시지별 오디오 URL 캐시
+    private Dictionary<ChatMessage, string> audioUrls = new();
+
+    // 추가됨: 설정 확정 후 AI가 먼저 인사하며 대화 시작
+    private async Task StartChat()
+    {
+        isStarted = true;
+        await GetAiReply();
+    }
+
+    private void Reset()
+    {
+        isStarted = false;
+        messages.Clear();
+        audioUrls.Clear();
+        userInput = "";
+        errorMessage = null;
+    }
+
+    private async Task SendMessage()
+    {
+        var text = userInput.Trim();
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        messages.Add(new ChatMessage("user", text));
+        userInput = "";
+        await GetAiReply();
+    }
+
+    // 추가됨: Enter 키로 전송 (Shift+Enter는 줄바꿈)
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+            await SendMessage();
+    }
+
+    private async Task GetAiReply()
+    {
+        errorMessage = null;
+        isLoading = true;
+
+        // 추가됨: 스크롤을 최신 메시지로 이동
+        await JS.InvokeVoidAsync("scrollToBottom", "chat-messages");
+
+        try
+        {
+            var reply = await ChatSvc.SendMessageAsync(
+                messages, selectedLang, selectedCategory, selectedLevel);
+
+            messages.Add(new ChatMessage("assistant", reply));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            await JS.InvokeVoidAsync("scrollToBottom", "chat-messages");
+        }
+    }
+
+    // 추가됨: AI 메시지를 TTS로 재생 (언어에 맞는 모델 자동 선택)
+    private async Task SpeakMessage(ChatMessage msg)
+    {
+        ttsLoadingIndex = messages.IndexOf(msg);
+        errorMessage = null;
+
+        try
+        {
+            var model = selectedLang is "ko" or "de" ? "tts-1-hd" : "tts-1";
+            var bytes = await TtsService.SynthesizeSpeechAsync(msg.Content, model: model);
+            audioUrls[msg] = $"data:audio/mpeg;base64,{Convert.ToBase64String(bytes)}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"TTS error: {ex.Message}";
+        }
+        finally
+        {
+            ttsLoadingIndex = -1;
+        }
+    }
+}
