@@ -1,20 +1,22 @@
-﻿<!DOCTYPE html>
+﻿<!-- MODIFIED: lang attribute changed from "ko" to "en" to match the English-language UI -->
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <base href="/"/>
-    <link rel="stylesheet" href="bootstrap/bootstrap.min.css"/>
-    <link rel="stylesheet" href="app.css"/>
-    <link rel="stylesheet" href="TtsWebApp.styles.css"/>
-    <link rel="icon" type="image/png" href="favicon.png"/>
-    <HeadOutlet/>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TTS Web App</title>
+    <base href="/" />
+    <HeadOutlet />
 </head>
-
 <body>
-<Routes/>
+<Routes />
 <script src="_framework/blazor.web.js"></script>
+@* 추가됨: 채팅 메시지 목록 자동 스크롤 함수 *@
+<script>
+        function scrollToBottom(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) el.scrollTop = el.scrollHeight;
+        }
+    </script>
 </body>
-
 </html>

@@ -12,13 +12,17 @@
                 <span class="app-logo-text">TTS Web App</span>
             </div>
 
-            @* 추가됨: TTS / Translate 탭 네비게이션 *@
+            @* 수정됨: TTS / Translate / Chat 탭 네비게이션 *@
             <nav class="app-tabs">
                 <a class="app-tab @(IsActive("/") ? "active" : "")" href="/">
                     TTS
                 </a>
                 <a class="app-tab @(IsActive("/translate") ? "active" : "")" href="/translate">
                     Translate
+                </a>
+                @* 추가됨: AI 대화 탭 *@
+                <a class="app-tab @(IsActive("/chat") ? "active" : "")" href="/chat">
+                    Chat
                 </a>
             </nav>
 
