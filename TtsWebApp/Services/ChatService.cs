@@ -75,7 +75,6 @@ public class ChatService
             model = "gpt-4o-mini",
             messages,
             temperature = 0.8,
-            humidity = 0.8,
             max_tokens = 300
         };
 

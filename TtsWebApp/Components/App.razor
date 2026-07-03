@@ -6,16 +6,187 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TTS Web App</title>
     <base href="/" />
+    @* 추가됨: 전역 스타일 + Blazor 컴포넌트 스코프 CSS 번들 *@
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="TtsWebApp.styles.css" />
     <HeadOutlet />
 </head>
 <body>
-<Routes />
-<script src="_framework/blazor.web.js"></script>
-@* 추가됨: 채팅 메시지 목록 자동 스크롤 함수 *@
-<script>
+    <Routes />
+    <script src="_framework/blazor.web.js"></script>
+    <script>
+        // 추가됨: 채팅 메시지 목록 자동 스크롤
         function scrollToBottom(elementId) {
             const el = document.getElementById(elementId);
             if (el) el.scrollTop = el.scrollHeight;
+        }
+
+        // 추가됨: 마이크 녹음 관련 변수
+        let _mediaRecorder = null;
+        let _audioChunks = [];
+
+        // 추가됨: 마이크 녹음 시작
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                _audioChunks = [];
+
+                // 추가됨: webm 포맷 지원 여부 확인 후 최적 포맷 선택
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                    ? 'audio/webm;codecs=opus'
+                    : 'audio/webm';
+
+                _mediaRecorder = new MediaRecorder(stream, { mimeType });
+                _mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) _audioChunks.push(e.data);
+                };
+                _mediaRecorder.start(100); // 100ms 단위로 청크 수집
+                return true;
+            } catch (err) {
+                console.error('Microphone access denied:', err);
+                return false;
+            }
+        }
+
+        // 추가됨: 녹음 중단 → base64로 인코딩 → .NET으로 전달
+        async function stopRecording(dotnetRef) {
+            if (!_mediaRecorder) return;
+
+            return new Promise((resolve) => {
+                _mediaRecorder.onstop = async () => {
+                    // 추가됨: 모든 오디오 청크를 하나의 Blob으로 합치기
+                    const blob = new Blob(_audioChunks, { type: _mediaRecorder.mimeType });
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        // 추가됨: data:audio/webm;base64,XXXX 에서 base64 부분만 추출
+                        const base64 = reader.result.split(',')[1];
+                        await dotnetRef.invokeMethodAsync('OnAudioRecorded', base64);
+                        resolve();
+                    };
+                    reader.readAsDataURL(blob);
+
+                    // 추가됨: 마이크 스트림 해제
+                    _mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                    _mediaRecorder = null;
+                };
+                _mediaRecorder.stop();
+            });
+        }
+        
+        let _conActive = false;
+        let _convRecorder = null;
+        let _convChunks = [];
+        let _conAudioContext = null;
+        let _currentAudio = null;
+        
+        async function startConversationListening(dotnetRef, silenceMs) {
+            if (!_convActive) return;
+            _convChunks = [];
+            
+            let stream;
+            try{
+                stream = await navigator.mediaDevices.getUserMedia({ audio : true });
+            } catch (err) {
+                console.error('Mic error:', err);
+                dotnetRef.invokeMethodAsync('onConvError', 'Microphone access denied.');
+                return;
+            }
+            
+            _conAudioContext = new AudioContext();
+            const analyser = _convAudioContext.createAnalyser();
+            const source = _convAudioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            analyser.fftSize = 512;
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? 'audio/webm;codecs=opus' : 'audio/webm';
+            _convRecorder = new MediaRecorder(stream, { mimeType });
+            _convRecorder.ondataavailable = (e) => { if (e.data.size > 0) _convChunks.push(e.data);
+            };
+
+            _convRecorder.onstop = async () => {
+                stream.getTracks().forEach(t => t.stop());
+                if (_convAudioContext) { _convAudioContext.close(); _convAudioContext = null; }
+                if (!_convActive) return; // Voice Mode가 이미 꺼졌으면 무시
+                if (_convChunks.length === 0) return;
+
+                const blob   = new Blob(_convChunks, { type: _convRecorder.mimeType });
+                const reader = new FileReader();
+                reader.onloadend = async () => {
+                    if (_convActive)
+                        await dotnetRef.invokeMethodAsync('OnAudioRecorded', reader.result.split(',')[1]);
+                };
+                reader.readAsDataURL(blob);
+            };
+
+            _convRecorder.start(100);
+            let silenceStart = null;
+            let hasSpoken    = false;
+ 
+            const vadLoop = () => {
+                if (!_convActive || !_convRecorder || _convRecorder.state === 'inactive') return;
+ 
+                analyser.getByteFrequencyData(dataArray);
+                const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+ 
+                if (avg > 12) {          // 추가됨: 말하는 중 (임계값 조절 가능)
+                    hasSpoken    = true;
+                    silenceStart = null;
+                } else if (hasSpoken) {  // 추가됨: 말 이후 침묵 감지
+                    if (!silenceStart) silenceStart = Date.now();
+                    if (Date.now() - silenceStart > silenceMs) {
+                        _convRecorder.stop(); // → onstop 트리거
+                        return;
+                    }
+                }
+                requestAnimationFrame(vadLoop);
+            };
+            requestAnimationFrame(vadLoop);
+        }
+ 
+        // 추가됨: Voice Mode 전체 중단
+        function stopConversationMode() {
+            _convActive = false;
+            if (_convRecorder && _convRecorder.state !== 'inactive') {
+                _convRecorder.onstop = () => {
+                    if (_convRecorder) _convRecorder.stream.getTracks().forEach(t => t.stop());
+                };
+                _convRecorder.stop();
+            }
+            if (_convAudioContext) { _convAudioContext.close(); _convAudioContext = null; }
+            stopCurrentAudio();
+        }
+ 
+        // 추가됨: TTS 오디오 재생 + 재생 끝나면 .NET에 콜백 (→ 마이크 자동 재오픈)
+        function playAudioAndNotify(base64Audio, dotnetRef) {
+            stopCurrentAudio();
+            _currentAudio = new Audio('data:audio/mpeg;base64,' + base64Audio);
+ 
+            _currentAudio.onended = () => {
+                _currentAudio = null;
+                if (_convActive)
+                    dotnetRef.invokeMethodAsync('OnTtsEnded');
+            };
+            _currentAudio.onerror = () => {
+                _currentAudio = null;
+                if (_convActive)
+                    dotnetRef.invokeMethodAsync('OnTtsEnded');
+            };
+            _currentAudio.play().catch(() => {
+                _currentAudio = null;
+                if (_convActive)
+                    dotnetRef.invokeMethodAsync('OnTtsEnded');
+            });
+        }
+ 
+        // 추가됨: 현재 재생 중인 TTS 중단
+        function stopCurrentAudio() {
+            if (_currentAudio) {
+                _currentAudio.onended = null;
+                _currentAudio.pause();
+                _currentAudio = null;
+            }
         }
     </script>
 </body>
