@@ -33,3 +33,7 @@ html, body {
     right: 0.75rem;
     top: 0.5rem;
 }
+
+:focus:not(:focus-visible) {
+    outline: none;
+}
