@@ -11,182 +11,19 @@
     <HeadOutlet />
 </head>
 <body>
-    <Routes />
-    <script src="_framework/blazor.web.js"></script>
-    <script>
-        // ── 유틸 ─────────────────────────────────────────────────────
+<Routes />
+<script src="_framework/blazor.web.js"></script>
+<script>
+        // 추가됨: 채팅 메시지 자동 스크롤
         function scrollToBottom(id) {
             const el = document.getElementById(id);
             if (el) el.scrollTop = el.scrollHeight;
         }
 
-        // ── 수동 마이크 (단발성) ──────────────────────────────────────
-        let _manualRecorder = null;
-        let _manualChunks   = [];
-
-        async function startRecording() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                _manualChunks = [];
-                const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-                    ? 'audio/webm;codecs=opus' : 'audio/webm';
-                _manualRecorder = new MediaRecorder(stream, { mimeType: mime });
-                _manualRecorder.ondataavailable = e => { if (e.data.size > 0) _manualChunks.push(e.data); };
-                _manualRecorder.start(100);
-                return true;
-            } catch { return false; }
-        }
-
-        async function stopRecording(dotnetRef) {
-            if (!_manualRecorder) return;
-            return new Promise(resolve => {
-                _manualRecorder.onstop = async () => {
-                    const blob = new Blob(_manualChunks, { type: _manualRecorder.mimeType });
-                    const reader = new FileReader();
-                    reader.onloadend = async () => {
-                        await dotnetRef.invokeMethodAsync('OnAudioRecorded', reader.result.split(',')[1]);
-                        resolve();
-                    };
-                    reader.readAsDataURL(blob);
-                    _manualRecorder.stream.getTracks().forEach(t => t.stop());
-                    _manualRecorder = null;
-                };
-                _manualRecorder.stop();
-            });
-        }
-
-        // ── Voice Mode — JS가 루프 전체를 직접 관리 ───────────────────
-        // 수정됨: 기존 C#↔JS 다중 왕복 구조 제거, JS async/await 루프로 단순화
-        // 흐름: VAD 녹음 → C#에 음성 전달 → C#이 TTS 반환 → 재생 → 다시 녹음
-        let _voiceActive      = false;
-        let _voiceAudioResolve = null; // provideVoiceAudio()가 채워줄 Promise resolver
-
-        async function startVoiceMode(dotnetRef) {
-            _voiceActive = true;
-
-            while (_voiceActive) {
-                try {
-                    // 1. 상태 알림: listening
-                    await dotnetRef.invokeMethodAsync('OnVoiceStateChanged', 'listening');
-
-                    // 2. VAD로 음성 녹음 (말하고 침묵 1.5초 → 자동 종료)
-                    const audioBase64 = await recordWithVAD(1500);
-                    if (!_voiceActive) break;
-
-                    // 빈 녹음(말 없이 침묵만) → 다시 듣기
-                    if (!audioBase64) continue;
-
-                    // 3. 상태 알림: processing
-                    await dotnetRef.invokeMethodAsync('OnVoiceStateChanged', 'processing');
-
-                    // 4. C#에 음성 데이터 전달 → C#이 Whisper + GPT + TTS 처리 후 provideVoiceAudio() 호출
-                    await dotnetRef.invokeMethodAsync('OnSpeechCaptured', audioBase64);
-
-                    // 5. C#이 TTS 오디오를 제공할 때까지 대기
-                    const ttsBase64 = await waitForTtsAudio();
-                    if (!_voiceActive) break;
-
-                    // TTS가 없으면(빈 응답) 바로 다시 듣기
-                    if (!ttsBase64) continue;
-
-                    // 6. 상태 알림: speaking
-                    await dotnetRef.invokeMethodAsync('OnVoiceStateChanged', 'speaking');
-
-                    // 7. TTS 재생 (재생 완료까지 await)
-                    await playAndWait(ttsBase64);
-
-                } catch (err) {
-                    console.error('[VoiceMode]', err);
-                    if (_voiceActive)
-                        await dotnetRef.invokeMethodAsync('OnConvError', err.message || 'Voice mode error');
-                    break;
-                }
-            }
-        }
-
-        // VAD 기반 녹음 — Promise로 감싸 await 가능하게
-        function recordWithVAD(silenceMs) {
-            return new Promise(async (resolve) => {
-                let stream;
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                } catch (err) {
-                    resolve('');
-                    return;
-                }
-
-                const audioCtx  = new AudioContext();
-                const analyser  = audioCtx.createAnalyser();
-                audioCtx.createMediaStreamSource(stream).connect(analyser);
-                analyser.fftSize = 512;
-                const data = new Uint8Array(analyser.frequencyBinCount);
-
-                const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-                    ? 'audio/webm;codecs=opus' : 'audio/webm';
-                const recorder = new MediaRecorder(stream, { mimeType: mime });
-                const chunks   = [];
-
-                recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-                recorder.onstop = () => {
-                    audioCtx.close();
-                    stream.getTracks().forEach(t => t.stop());
-                    if (chunks.length === 0) { resolve(''); return; }
-                    const blob   = new Blob(chunks, { type: mime });
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
-                    reader.readAsDataURL(blob);
-                };
-
-                recorder.start(100);
-
-                let silenceStart = null, hasSpoken = false;
-                const vad = () => {
-                    if (!_voiceActive) { recorder.stop(); return; }
-                    if (recorder.state === 'inactive') return;
-
-                    analyser.getByteFrequencyData(data);
-                    const avg = data.reduce((a, b) => a + b, 0) / data.length;
-
-                    if (avg > 12) {
-                        hasSpoken = true; silenceStart = null;
-                    } else if (hasSpoken) {
-                        if (!silenceStart) silenceStart = Date.now();
-                        if (Date.now() - silenceStart > silenceMs) { recorder.stop(); return; }
-                    }
-                    requestAnimationFrame(vad);
-                };
-                requestAnimationFrame(vad);
-            });
-        }
-
-        // C#(OnSpeechCaptured)이 TTS 처리를 마치면 이 함수를 호출해 루프를 재개
-        function provideVoiceAudio(base64Tts) {
-            if (_voiceAudioResolve) {
-                _voiceAudioResolve(base64Tts);
-                _voiceAudioResolve = null;
-            }
-        }
-
-        // C#이 provideVoiceAudio를 호출할 때까지 대기
-        function waitForTtsAudio() {
-            return new Promise(resolve => { _voiceAudioResolve = resolve; });
-        }
-
-        // 오디오 재생 → 끝날 때까지 await
-        function playAndWait(base64) {
-            return new Promise(resolve => {
-                const audio = new Audio('data:audio/mpeg;base64,' + base64);
-                audio.onended = resolve;
-                audio.onerror = resolve;
-                audio.play().catch(resolve);
-            });
-        }
-
-        // Voice Mode 중단
-        function stopVoiceMode() {
-            _voiceActive = false;
-            // 대기 중인 TTS Promise 해제
-            if (_voiceAudioResolve) { _voiceAudioResolve(''); _voiceAudioResolve = null; }
+        // 추가됨: base64 오디오 재생 (autoplay 정책 우회)
+        function playAudio(base64) {
+            const audio = new Audio('data:audio/mpeg;base64,' + base64);
+            audio.play().catch(() => {}); // 자동재생 차단돼도 무시
         }
     </script>
 </body>
