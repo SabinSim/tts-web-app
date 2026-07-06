@@ -1,16 +1,16 @@
 @page "/chat"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @implements IDisposable
 @inject ChatService ChatSvc
 @inject WhisperService WhisperSvc
 @inject OpenAiTtsService TtsService
 @inject IJSRuntime JS
- 
+
 <PageTitle>Chat — TTS Web App</PageTitle>
- 
+
 <div class="chat-card">
- 
-    @* ── 설정 화면 ──────────────────────────────────────────── *@
+
+    @* ── 설정 화면 ────────────────────────────────────────── *@
     @if (!isStarted)
     {
         <div class="chat-setup">
@@ -18,7 +18,7 @@
                 <h2>AI Language Chat</h2>
                 <p>Choose your language, topic, and level — then start practicing.</p>
             </div>
- 
+
             <div class="chat-setup-section">
                 <span class="chat-setup-label">Language</span>
                 <div class="chat-option-bar">
@@ -31,7 +31,7 @@
                     }
                 </div>
             </div>
- 
+
             <div class="chat-setup-section">
                 <span class="chat-setup-label">Topic</span>
                 <div class="chat-option-bar">
@@ -44,7 +44,7 @@
                     }
                 </div>
             </div>
- 
+
             <div class="chat-setup-section">
                 <span class="chat-setup-label">Level</span>
                 <div class="chat-option-bar">
@@ -57,7 +57,7 @@
                     }
                 </div>
             </div>
- 
+
             <button class="chat-start-btn" @onclick="StartChat">
                 Start Conversation →
             </button>
@@ -65,7 +65,7 @@
     }
     else
     {
-        @* ── 채팅 헤더 ──────────────────────────────────────── *@
+        @* ── 채팅 헤더 ────────────────────────────────────── *@
         <div class="chat-header">
             <div class="chat-header-info">
                 <h2>AI Language Chat</h2>
@@ -77,8 +77,8 @@
             </div>
             <button class="chat-reset-btn" @onclick="Reset">New chat</button>
         </div>
- 
-        @* ── 메시지 목록 ─────────────────────────────────────── *@
+
+        @* ── 메시지 목록 ──────────────────────────────────── *@
         <div class="chat-messages" id="chat-messages">
             @foreach (var msg in messages)
             {
@@ -89,9 +89,9 @@
                     }
                     <div class="chat-bubble">
                         <p class="chat-bubble-text">@msg.Content</p>
+                        @* 수동 모드일 때만 개별 TTS 버튼 표시 *@
                         @if (msg.Role == "assistant" && !isConversationMode)
                         {
-                            @* 수동 모드에서만 개별 TTS 버튼 표시 *@
                             <div class="chat-bubble-actions">
                                 @if (ttsLoadingIndex == messages.IndexOf(msg))
                                 {
@@ -114,7 +114,7 @@
                     }
                 </div>
             }
- 
+
             @if (isLoading)
             {
                 <div class="chat-bubble-wrap assistant">
@@ -125,17 +125,16 @@
                 </div>
             }
         </div>
- 
+
         @if (errorMessage is not null)
         {
             <p class="chat-error">⚠ @errorMessage</p>
         }
- 
-        @* ── Voice Mode 인디케이터 (활성일 때만 표시) ─────────── *@
+
+        @* ── Voice Mode 활성 UI ───────────────────────────── *@
         @if (isConversationMode)
         {
             <div class="chat-conv-ui">
-                @* 추가됨: 상태에 따라 색/애니메이션이 바뀌는 원형 인디케이터 *@
                 <div class="chat-conv-indicator @convState">
                     @if (convState == "listening")
                     {
@@ -157,8 +156,6 @@
                         </svg>
                     }
                 </div>
- 
-                @* 추가됨: 상태 텍스트 *@
                 <p class="chat-conv-status-text">
                     @(convState switch {
                         "listening"  => "Listening…",
@@ -167,7 +164,6 @@
                         _            => "Starting…"
                     })
                 </p>
- 
                 <button class="chat-conv-stop-btn" @onclick="StopConversationMode">
                     ■ Stop Voice Mode
                 </button>
@@ -175,12 +171,12 @@
         }
         else
         {
-            @* ── 수동 입력 행 ──────────────────────────────────── *@
+            @* ── 수동 입력 행 ─────────────────────────────── *@
             <div class="chat-input-row">
                 <button class="chat-mic-btn @(isRecording ? "recording" : "") @(isTranscribing ? "transcribing" : "")"
                         @onclick="ToggleRecording"
                         disabled="@(isLoading || isTranscribing)"
-                        title="@(isRecording ? "Stop recording" : "Record once")">
+                        title="@(isRecording ? "Stop" : "Record")">
                     @if (isTranscribing)
                     {
                         <span class="chat-mic-spinner"></span>
@@ -201,31 +197,23 @@
                         </svg>
                     }
                 </button>
- 
+
                 <textarea class="chat-input"
                           @bind="userInput"
                           @bind:event="oninput"
                           @onkeydown="OnKeyDown"
                           rows="2"
-                          placeholder="@(isRecording ? "Recording… click ■ to stop" : "Type here or use mic… (Enter to send)")"
+                          placeholder="@(isRecording ? "Recording… click ■ to stop" : "Type or use mic… (Enter to send)")"
                           disabled="@(isLoading || isRecording)"></textarea>
- 
+
                 <button class="chat-send-btn" @onclick="SendMessage"
                         disabled="@(isLoading || isRecording || isTranscribing || string.IsNullOrWhiteSpace(userInput))">
-                    @if (isLoading)
-                    {
-                        <span class="chat-send-spinner"></span>
-                    }
-                    else
-                    {
-                        <span>Send</span>
-                    }
+                    @if (isLoading) { <span class="chat-send-spinner"></span> }
+                    else { <span>Send</span> }
                 </button>
             </div>
- 
-            @* 추가됨: Voice Mode 시작 버튼 *@
-            <button class="chat-voice-mode-btn" @onclick="StartConversationMode"
-                    disabled="@isLoading">
+
+            <button class="chat-voice-mode-btn" @onclick="StartConversationMode" disabled="@isLoading">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                     <rect x="5" y="1" width="6" height="8" rx="3"/>
                     <path d="M2 8a6 6 0 0012 0" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
@@ -235,7 +223,7 @@
             </button>
         }
     }
- 
+
 </div>
 
 @code {
@@ -243,19 +231,17 @@
     private string selectedCategory = "daily";
     private string selectedLevel    = "beginner";
 
-    private bool isStarted;
-    private bool isLoading;
-    private bool isRecording;
-    private bool isTranscribing;
-    private int  ttsLoadingIndex = -1;
+    private bool   isStarted;
+    private bool   isLoading;
+    private bool   isRecording;
+    private bool   isTranscribing;
+    private int    ttsLoadingIndex    = -1;
     private string? errorMessage;
-    private string userInput = "";
-
-    // 추가됨: Voice Mode 상태
+    private string  userInput         = "";
     private bool   isConversationMode = false;
-    private string convState          = "idle"; // idle | listening | processing | speaking
+    private string convState          = "idle";
 
-    private List<ChatMessage>            messages  = new();
+    private List<ChatMessage>               messages  = new();
     private Dictionary<ChatMessage, string> audioUrls = new();
 
     private DotNetObjectReference<Chat>? _dotNetRef;
@@ -265,36 +251,32 @@
         _dotNetRef = DotNetObjectReference.Create(this);
     }
 
+    // ── 채팅 시작 ────────────────────────────────────────────────
     private async Task StartChat()
     {
         isStarted = true;
-        await GetAiReply(autoSpeak: false); // 첫 인사는 자동 재생 안 함
+        await GetAiReplyText(); // 첫 인사 (TTS 없이)
     }
 
     private async Task Reset()
     {
-        await StopConversationMode();
-        if (isRecording)
-        {
-            isRecording = false;
-            await JS.InvokeVoidAsync("stopRecording", _dotNetRef);
-        }
+        if (isConversationMode) await StopConversationMode();
         isStarted  = false;
         messages.Clear();
         audioUrls.Clear();
-        userInput     = "";
-        errorMessage  = null;
-        convState     = "idle";
+        userInput    = "";
+        errorMessage = null;
+        convState    = "idle";
     }
 
-    // ── 수동 텍스트 전송 ──────────────────────────────────────────
+    // ── 수동 텍스트 전송 ─────────────────────────────────────────
     private async Task SendMessage()
     {
         var text = userInput.Trim();
         if (string.IsNullOrWhiteSpace(text)) return;
         messages.Add(new ChatMessage("user", text));
         userInput = "";
-        await GetAiReply(autoSpeak: false);
+        await GetAiReplyText();
     }
 
     private async Task OnKeyDown(KeyboardEventArgs e)
@@ -302,7 +284,7 @@
         if (e.Key == "Enter" && !e.ShiftKey) await SendMessage();
     }
 
-    // ── 수동 마이크 (단발성) ──────────────────────────────────────
+    // ── 수동 마이크 (단발성) ─────────────────────────────────────
     private async Task ToggleRecording()
     {
         if (!isRecording)
@@ -320,7 +302,7 @@
         }
     }
 
-    // 추가됨: JS → 오디오 base64 전달 (수동 모드 & Voice Mode 공용)
+    // 수동 마이크 전용 콜백
     [JSInvokable]
     public async Task OnAudioRecorded(string base64Audio)
     {
@@ -328,115 +310,107 @@
         {
             var bytes      = Convert.FromBase64String(base64Audio);
             var transcript = await WhisperSvc.TranscribeAsync(bytes, selectedLang);
-
-            if (isConversationMode)
-            {
-                // 추가됨: Voice Mode — 전사 즉시 자동 전송
-                if (!string.IsNullOrWhiteSpace(transcript))
-                {
-                    messages.Add(new ChatMessage("user", transcript));
-                    await InvokeAsync(StateHasChanged);
-                    await GetAiReply(autoSpeak: true);
-                }
-                else
-                {
-                    // 추가됨: 말이 없었으면 다시 듣기 시작
-                    await ResumeListening();
-                }
-            }
-            else
-            {
-                // 수동 모드 — 입력창에만 채워줌
-                userInput      = transcript;
-                isTranscribing = false;
-                await InvokeAsync(StateHasChanged);
-            }
+            userInput = transcript;
         }
-        catch (Exception ex)
-        {
-            errorMessage   = $"Transcription failed: {ex.Message}";
-            isTranscribing = false;
-            if (isConversationMode) convState = "listening";
-            await InvokeAsync(StateHasChanged);
-        }
+        catch (Exception ex) { errorMessage = $"Transcription failed: {ex.Message}"; }
+        finally { isTranscribing = false; await InvokeAsync(StateHasChanged); }
     }
 
-    // 추가됨: TTS 재생이 끝나면 JS가 이 메서드를 호출 → 마이크 자동 재오픈
-    [JSInvokable]
-    public async Task OnTtsEnded()
-    {
-        if (!isConversationMode) return;
-        await ResumeListening();
-    }
-
-    // 추가됨: Voice Mode 오류 수신
-    [JSInvokable]
-    public async Task OnConvError(string message)
-    {
-        errorMessage = message;
-        isConversationMode = false;
-        convState = "idle";
-        await InvokeAsync(StateHasChanged);
-    }
-
-    // ── Voice Mode 제어 ───────────────────────────────────────────
+    // ── Voice Mode ───────────────────────────────────────────────
     private async Task StartConversationMode()
     {
         isConversationMode = true;
         convState          = "listening";
         errorMessage       = null;
         await InvokeAsync(StateHasChanged);
-        await JS.InvokeVoidAsync("startConversationListening", _dotNetRef, 1500);
+        // 수정됨: JS가 루프 전체를 관리 — C#↔JS 왕복 최소화
+        await JS.InvokeVoidAsync("startVoiceMode", _dotNetRef);
     }
 
     private async Task StopConversationMode()
     {
         isConversationMode = false;
         convState          = "idle";
-        await JS.InvokeVoidAsync("stopConversationMode");
+        await JS.InvokeVoidAsync("stopVoiceMode");
         await InvokeAsync(StateHasChanged);
     }
 
-    // 추가됨: TTS 종료 후 다시 듣기 재개
-    private async Task ResumeListening()
+    // 수정됨: JS 루프에서 호출 — 음성 → Whisper → GPT → TTS → provideVoiceAudio()
+    [JSInvokable]
+    public async Task OnSpeechCaptured(string base64Audio)
     {
-        if (!isConversationMode) return;
-        convState = "listening";
-        await InvokeAsync(StateHasChanged);
-        await JS.InvokeVoidAsync("startConversationListening", _dotNetRef, 1500);
+        try
+        {
+            // 1. Whisper 전사
+            var bytes      = Convert.FromBase64String(base64Audio);
+            var transcript = await WhisperSvc.TranscribeAsync(bytes, selectedLang);
+
+            if (string.IsNullOrWhiteSpace(transcript))
+            {
+                await JS.InvokeVoidAsync("provideVoiceAudio", "");
+                return;
+            }
+
+            // 2. 사용자 메시지 추가
+            messages.Add(new ChatMessage("user", transcript));
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("scrollToBottom", "chat-messages");
+
+            // 3. GPT 응답
+            var reply = await ChatSvc.SendMessageAsync(
+                messages, selectedLang, selectedCategory, selectedLevel);
+            messages.Add(new ChatMessage("assistant", reply));
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("scrollToBottom", "chat-messages");
+
+            // 4. TTS 생성
+            var model    = selectedLang is "ko" or "de" ? "tts-1-hd" : "tts-1";
+            var ttsBytes = await TtsService.SynthesizeSpeechAsync(reply, model: model);
+            var ttsB64   = Convert.ToBase64String(ttsBytes);
+
+            // 5. JS 루프에 TTS 오디오 전달 → JS가 재생 후 자동으로 다음 VAD 시작
+            await JS.InvokeVoidAsync("provideVoiceAudio", ttsB64);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("provideVoiceAudio", ""); // 오류 시에도 루프 계속
+        }
     }
 
-    // ── AI 응답 요청 ──────────────────────────────────────────────
-    private async Task GetAiReply(bool autoSpeak)
+    // Voice Mode 상태 변경 콜백 (JS → C#)
+    [JSInvokable]
+    public async Task OnVoiceStateChanged(string state)
+    {
+        convState = state;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Voice Mode 오류 콜백
+    [JSInvokable]
+    public async Task OnConvError(string message)
+    {
+        errorMessage       = message;
+        isConversationMode = false;
+        convState          = "idle";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // ── 수동 TTS 버튼 ────────────────────────────────────────────
+    private async Task GetAiReplyText()
     {
         errorMessage = null;
         isLoading    = true;
-        if (isConversationMode) convState = "processing";
         await InvokeAsync(StateHasChanged);
         await JS.InvokeVoidAsync("scrollToBottom", "chat-messages");
-
         try
         {
             var reply = await ChatSvc.SendMessageAsync(
                 messages, selectedLang, selectedCategory, selectedLevel);
             messages.Add(new ChatMessage("assistant", reply));
-
-            if (autoSpeak && isConversationMode)
-            {
-                // 추가됨: Voice Mode — TTS 자동 재생 + 끝나면 OnTtsEnded 콜백
-                convState = "speaking";
-                await InvokeAsync(StateHasChanged);
-                var model = selectedLang is "ko" or "de" ? "tts-1-hd" : "tts-1";
-                var bytes = await TtsService.SynthesizeSpeechAsync(reply, model: model);
-                var b64   = Convert.ToBase64String(bytes);
-                await JS.InvokeVoidAsync("playAudioAndNotify", b64, _dotNetRef);
-            }
         }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error: {ex.Message}";
-            if (isConversationMode) await ResumeListening();
-        }
+        catch (Exception ex) { errorMessage = ex.Message; }
         finally
         {
             isLoading = false;
@@ -445,11 +419,9 @@
         }
     }
 
-    // ── 수동 모드 개별 TTS 버튼 ──────────────────────────────────
     private async Task SpeakMessageManual(ChatMessage msg)
     {
         ttsLoadingIndex = messages.IndexOf(msg);
-        errorMessage    = null;
         try
         {
             var model = selectedLang is "ko" or "de" ? "tts-1-hd" : "tts-1";
@@ -457,11 +429,8 @@
             audioUrls[msg] = $"data:audio/mpeg;base64,{Convert.ToBase64String(bytes)}";
         }
         catch (Exception ex) { errorMessage = $"TTS error: {ex.Message}"; }
-        finally { ttsLoadingIndex = -1; }
+        finally { ttsLoadingIndex = -1; await InvokeAsync(StateHasChanged); }
     }
 
-    public void Dispose()
-    {
-        _dotNetRef?.Dispose();
-    }
+    public void Dispose() => _dotNetRef?.Dispose();
 }
