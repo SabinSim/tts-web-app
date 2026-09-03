@@ -15,7 +15,7 @@ public class ChatService
     {
         ("de", "Deutsch", "German"),
         ("en", "English", "English"),
-        ("es", "힌국어", "Korean"),
+        ("ko", "한국어", "Korean"),
     };
 
     public static readonly (string Code, string Label, string Description)[] Categories =
@@ -28,8 +28,8 @@ public class ChatService
 
     public static readonly (string Code, string Label, string Instruction)[] Levels =
     {
-        ("beginner", "Beginner", "Basic vocabulary and simple senetences"),
-        ("intermediate", "Intermediate", "More complex setences and grammar"),
+        ("beginner", "Beginner", "Basic vocabulary and simple sentences"),
+        ("intermediate", "Intermediate", "More complex sentences and grammar"),
         ("advanced", "Advanced", "Use of idioms, phrasal verbs, and nuanced expressions")
     };
     
