@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 namespace TtsWebApp.Controllers;
 
 /// <summary>
-/// OpenAI TTS API(/v1/audio/speech)를 호출해 텍스트를 음성(mp3)으로 변환하는 서비스.
+/// A service that calls the OpenAI TTS API (/v1/audio/speech) to convert text into speech (mp3).
 /// </summary>
 
 public class OpenAiTtsService
@@ -20,7 +20,7 @@ public class OpenAiTtsService
 
     public async Task<byte[]> SynthesizeSpeechAsync(string text, CancellationToken ct = default)
     {
-        // ==================== 1. 설정 검증 ====================
+        // ==================== 1. Validate configuration ====================
         var apiKey = _config["OpenAi:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
         {
@@ -30,11 +30,11 @@ public class OpenAiTtsService
                 "You can get your API key from https://platform.openai.com/account/api-keys");
         }
 
-        // ==================== 2. API 파라미터 설정 ====================
+        // ==================== 2. Configure API parameters ====================
         var model = _config["OpenAi:Model"] ?? "tts-1";
         var voice = _config["OpenAi:Voice"] ?? "alloy";
         
-        // ==================== 3. HTTP 요청 구성 ====================
+        // ==================== 3. Build HTTP request ====================
         using var request = new HttpRequestMessage(HttpMethod.Post, "v1/audio/speech");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer",  apiKey);
         request.Content = JsonContent.Create(new
@@ -45,10 +45,10 @@ public class OpenAiTtsService
             response_format = "mp3"
         });
         
-        // ==================== 4. API 호출 ====================
+        // ==================== 4. Call the API ====================
         var response = await _http.SendAsync(request, ct);
 
-        // ==================== 5. 응답 처리 ====================
+        // ==================== 5. Handle response ====================
         if (!response.IsSuccessStatusCode)
         {
             var detail = await response.Content.ReadAsStringAsync();
@@ -56,7 +56,7 @@ public class OpenAiTtsService
                 $"OpenAI TTS API request failed with status code ({(int)response.StatusCode}): {detail}");
         }
 
-        // ==================== 6. 결과 반환 ====================
+        // ==================== 6. Return the result ====================
         return await response.Content.ReadAsByteArrayAsync(ct);
     }
 }

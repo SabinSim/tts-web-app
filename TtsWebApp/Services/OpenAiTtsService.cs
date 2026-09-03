@@ -4,11 +4,11 @@ using System.Net.Http.Json;
 namespace TtsWebApp.Services;
 
 /// <summary>
-/// OpenAI TTS API를 호출해 텍스트를 음성(mp3)으로 변환하는 서비스
+/// A service that calls the OpenAI TTS API to convert text into speech (mp3)
 /// </summary>
 public class OpenAiTtsService
 {
-    // ==================== 1. 의존성 주입 ====================
+    // ==================== 1. Dependency injection ====================
     private readonly HttpClient _http;
     private readonly IConfiguration _config;
 
@@ -18,7 +18,7 @@ public class OpenAiTtsService
         _config = config;
     }
 
-    // ==================== 2. 사용 가능한 음성 목록 ====================
+    // ==================== 2. List of available voices ====================
     public static readonly string[] AvailableVoices =
     {
         "alloy", "ash", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"
@@ -27,7 +27,7 @@ public class OpenAiTtsService
     public static readonly string[] AvailableModels =
         { "tts-1", "tts-1-hd" };
 
-    // ==================== 3. 음성 합성 메서드 ====================
+    // ==================== 3. Speech synthesis method ====================
     public async Task<byte[]> SynthesizeSpeechAsync(
         string text, 
         string? voice = null, 
@@ -35,7 +35,7 @@ public class OpenAiTtsService
         float speed = 1.0f,
         CancellationToken ct = default)
     {
-        // 3-1. API 키 검증
+        // 3-1. Validate API key
         var apiKey = _config["OpenAI:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
         {
@@ -45,7 +45,7 @@ public class OpenAiTtsService
                 "You can get your API key from https://platform.openai.com/account/api-keys");
         }
 
-        // 3-2. 모델 및 음성 설정
+        // 3-2. Configure model and voice
         var resolvedModel = string.IsNullOrWhiteSpace(model)
             ? (_config["OpenAI:Model"] ?? "tts-1")
             : model;
@@ -57,7 +57,7 @@ public class OpenAiTtsService
         var clampedSpeed = Math.Clamp(speed, 0.25f, 4.0f);
         
 
-        // 3-3. HTTP 요청 구성
+        // 3-3. Build HTTP request
         using var request = new HttpRequestMessage(HttpMethod.Post, "v1/audio/speech");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         request.Content = JsonContent.Create(new
@@ -69,10 +69,10 @@ public class OpenAiTtsService
             speed = clampedSpeed
         });
 
-        // 3-4. API 호출
+        // 3-4. Call the API
         var response = await _http.SendAsync(request, ct);
 
-        // 3-5. 응답 처리 및 에러 핸들링
+        // 3-5. Handle response and errors
         if (!response.IsSuccessStatusCode)
         {
             var detail = await response.Content.ReadAsStringAsync(ct);
@@ -80,7 +80,7 @@ public class OpenAiTtsService
                 $"OpenAI TTS API call failed ({(int)response.StatusCode}): {detail}");
         }
 
-        // 3-6. 음성 데이터 반환
+        // 3-6. Return the audio data
         return await response.Content.ReadAsByteArrayAsync(ct);
     }
 }

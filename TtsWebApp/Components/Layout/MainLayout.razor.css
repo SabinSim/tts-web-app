@@ -1,11 +1,11 @@
-/* 추가됨: 전체 레이아웃 래퍼 */
+/* Added: overall layout wrapper */
 .app-shell {
     min-height: 100vh;
     background: #f8fafc;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
 }
 
-/* 추가됨: 상단 헤더 바 */
+/* Added: top header bar */
 .app-header {
     position: sticky;
     top: 0;
@@ -26,7 +26,7 @@
     height: 56px;
 }
 
-/* 추가됨: 로고 (아이콘 + 텍스트) */
+/* Added: logo (icon + text) */
 .app-logo {
     display: flex;
     align-items: center;
@@ -47,7 +47,7 @@
     letter-spacing: -0.2px;
 }
 
-/* 추가됨: 중앙 탭 네비게이션 */
+/* Added: center tab navigation */
 .app-tabs {
     display: flex;
     align-items: center;
@@ -73,7 +73,7 @@
     color: #1a1a2e;
 }
 
-/* 추가됨: 현재 활성 탭 강조 */
+/* Added: highlight the current active tab */
 .app-tab.active {
     background: #ffffff;
     color: #1a1a2e;
@@ -81,7 +81,7 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* 추가됨: GitHub 링크 (우측) */
+/* Added: GitHub link (right side) */
 .app-github-link {
     padding: 6px 12px;
     font-size: 13px;
@@ -97,14 +97,14 @@
     color: #1a1a2e;
 }
 
-/* 추가됨: 메인 콘텐츠 영역 */
+/* Added: main content area */
 .app-content {
     max-width: 720px;
     margin: 0 auto;
     padding: 32px 24px 64px;
 }
 
-/* 추가됨: 모바일 대응 */
+/* Added: mobile support */
 @media (max-width: 560px) {
     .app-header-inner {
         padding: 0 16px;

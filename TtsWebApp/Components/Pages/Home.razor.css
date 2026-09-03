@@ -1,4 +1,4 @@
-/* 수정됨: Home.razor.css는 이제 홈 페이지 전용. TTS 스타일은 Tts.razor.css로 이동. */
+/* Modified: Home.razor.css is now dedicated to the home page only. TTS styles have moved to Tts.razor.css. */
 
 /* ── Home page layout ─────────────────────────────────────────── */
 .home-wrap {
@@ -240,7 +240,7 @@
     .home-step-line { flex: 0 0 12px; }
 }
 
-/* ── (아래 스타일은 삭제됨 — Tts.razor.css로 이동) ────────────── */
+/* ── (styles below have been removed — moved to Tts.razor.css) ────────────── */
 /* placeholder so Blazor scoped CSS doesn't break CSS variables */
 .tts-card {
     --accent:       #5a7af9;
@@ -347,7 +347,7 @@
     font-weight: 600;
 }
 
-/* ── Settings 섹션 (추가됨: 모델/음성/속도 그룹 전체 컨테이너) ── */
+/* ── Settings section (Added: container for the model/voice/speed group) ── */
 .tts-settings {
     display: grid;
     grid-template-columns: auto auto 1fr;
@@ -360,20 +360,20 @@
     border-radius: var(--radius-md);
 }
 
-/* 추가됨: 개별 설정 항목 래퍼 (label + control) */
+/* Added: wrapper for an individual setting item (label + control) */
 .tts-setting-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-/* 추가됨: 모델 선택 토글 버튼 그룹 */
+/* Added: model selection toggle button group */
 .tts-model-toggle {
     display: flex;
     gap: 6px;
 }
 
-/* 추가됨: 모델 토글 개별 버튼 */
+/* Added: individual model toggle button */
 .tts-model-btn {
     display: flex;
     align-items: center;
@@ -390,7 +390,7 @@
     transition: all var(--transition);
 }
 
-/* 추가됨: 선택된 모델 버튼 강조 스타일 */
+/* Added: highlight style for the selected model button */
 .tts-model-btn.active {
     color: var(--accent);
     border-color: var(--accent);
@@ -403,7 +403,7 @@
     background: var(--bg-hover);
 }
 
-/* 추가됨: HD 뱃지 (tts-1-hd 버튼 안의 작은 레이블) */
+/* Added: HD badge (small label inside the tts-1-hd button) */
 .tts-model-badge {
     display: inline-block;
     padding: 1px 5px;
@@ -415,12 +415,12 @@
     letter-spacing: 0.3px;
 }
 
-/* ── 속도 슬라이더 (추가됨) ────────────────────────────────── */
+/* ── Speed slider (Added) ────────────────────────────────── */
 .tts-speed-group {
     grid-column: 1 / -1;
 }
 
-/* 추가됨: 현재 속도 값 표시 (라벨 옆에 인라인으로) */
+/* Added: display the current speed value (inline next to the label) */
 .tts-speed-value {
     font-size: 13px;
     font-weight: 700;
@@ -430,7 +430,7 @@
     letter-spacing: 0;
 }
 
-/* 추가됨: range input 기본 스타일 재정의 */
+/* Added: override the default range input style */
 .tts-slider {
     -webkit-appearance: none;
     appearance: none;
@@ -473,7 +473,7 @@
     cursor: pointer;
 }
 
-/* 추가됨: 슬라이더 아래 눈금 레이블 */
+/* Added: tick mark labels below the slider */
 .tts-slider-marks {
     display: flex;
     justify-content: space-between;
@@ -482,7 +482,7 @@
     color: var(--text-muted);
 }
 
-/* ── Controls row (Generate 버튼) ──────────────────────────── */
+/* ── Controls row (Generate button) ──────────────────────────── */
 .tts-controls {
     display: flex;
     align-items: center;
@@ -491,7 +491,7 @@
     margin-bottom: 4px;
 }
 
-/* 수정됨: voice picker를 settings 섹션으로 이동했으므로 기존 voice-group 제거 후 select만 유지 */
+/* Modified: moved the voice picker into the settings section, so the old voice-group was removed, keeping only the select */
 .tts-voice-group {
     display: flex;
     flex-direction: column;
@@ -682,7 +682,7 @@
     font-weight: 600;
 }
 
-/* 추가됨: 모델명 배지 (히스토리 항목 안, 음성 배지와 구분되도록 회색 계열) */
+/* Added: model name badge (inside history items, gray tone to distinguish from the voice badge) */
 .tts-badge-model {
     background: #f1f5f9;
     color: var(--text-secondary);
@@ -693,7 +693,7 @@
     width: 160px;
 }
 
-/* ── Clear all 버튼 (추가됨) ──────────────────────────────── */
+/* ── Clear all button (Added) ──────────────────────────────── */
 .tts-clear-btn {
     padding: 4px 10px;
     font-size: 12px;
@@ -742,7 +742,7 @@
         padding: 24px 20px;
     }
 
-    /* 추가됨: 모바일에서 settings 섹션 세로 정렬 */
+    /* Added: stack the settings section vertically on mobile */
     .tts-settings {
         grid-template-columns: 1fr;
     }

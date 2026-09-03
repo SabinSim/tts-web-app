@@ -44,7 +44,7 @@
         }
     </div>
 
-    @* 수정됨: 결과 박스 안에 Play 버튼을 통합 — 결과 텍스트 옆에 작은 아이콘 버튼으로 배치 *@
+    @* Modified: integrated the Play button inside the result box — placed as a small icon button next to the result text *@
     <div class="tr-result-box @(translatedText is not null ? "has-result" : "")">
         @if (translatedText is not null)
         {
@@ -141,7 +141,7 @@
         }
     }
 
-    // 추가됨: 번역 결과를 바로 한 번 재생 (한/독은 tts-1-hd 사용)
+    // Added: immediately play the translation result once (use tts-1-hd for Korean/German)
     private async Task Speak()
     {
         if (translatedText is null) return;
@@ -166,7 +166,7 @@
         }
     }
 
-    // 수정됨: static 변수 대신 URL 쿼리 파라미터로 전달 → Blazor 라우팅에서 안정적으로 동작
+    // Modified: pass via URL query parameter instead of a static variable → works reliably with Blazor routing
     private void SendToTts()
     {
         var encoded = Uri.EscapeDataString(translatedText ?? "");

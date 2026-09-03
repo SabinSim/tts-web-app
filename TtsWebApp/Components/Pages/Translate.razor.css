@@ -1,4 +1,4 @@
-/* 추가됨: TTS 카드와 동일한 디자인 토큰 */
+/* Added: same design tokens as the TTS card */
 .tr-card {
     --accent:         #5a7af9;
     --accent-dark:    #4165e8;
@@ -29,7 +29,7 @@
     font-family: var(--font);
 }
 
-/* 헤더 */
+/* Header */
 .tr-header {
     margin-bottom: 24px;
 }
@@ -48,7 +48,7 @@
     color: var(--text-secondary);
 }
 
-/* 추가됨: 언어 선택 바 */
+/* Added: language selection bar */
 .tr-lang-bar {
     display: flex;
     gap: 4px;
@@ -59,7 +59,7 @@
     padding: 4px;
 }
 
-/* 추가됨: 언어 선택 버튼 */
+/* Added: language selection button */
 .tr-lang-btn {
     flex: 1;
     padding: 8px 12px;
@@ -80,7 +80,7 @@
     color: var(--text-primary);
 }
 
-/* 추가됨: 선택된 언어 버튼 */
+/* Added: selected language button */
 .tr-lang-btn.active {
     background: #ffffff;
     color: var(--accent);
@@ -88,7 +88,7 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-/* 입력 텍스트 영역 */
+/* Input text area */
 .tr-input {
     width: 100%;
     padding: 14px 16px;
@@ -115,7 +115,7 @@
     color: var(--text-muted);
 }
 
-/* 추가됨: 두 섹션 사이 구분선 + 화살표 */
+/* Added: divider + arrow between the two sections */
 .tr-divider {
     display: flex;
     align-items: center;
@@ -129,7 +129,7 @@
     line-height: 1;
 }
 
-/* 추가됨: 번역 결과 박스 */
+/* Added: translation result box */
 .tr-result-box {
     min-height: 100px;
     padding: 14px 16px;
@@ -140,7 +140,7 @@
     transition: border-color var(--transition);
 }
 
-/* 추가됨: 결과가 있을 때 테두리 색 강조 */
+/* Added: highlight border color when a result is present */
 .tr-result-box.has-result {
     border-color: #c3cefc;
     background: #fafbff;
@@ -155,7 +155,7 @@
     word-break: break-word;
 }
 
-/* 추가됨: 결과 없을 때 placeholder 텍스트 */
+/* Added: placeholder text when there is no result */
 .tr-result-placeholder {
     margin: 0;
     font-size: 14px;
@@ -163,7 +163,7 @@
     font-style: italic;
 }
 
-/* 추가됨: 버튼 행 */
+/* Added: button row */
 .tr-actions {
     display: flex;
     align-items: center;
@@ -171,7 +171,7 @@
     flex-wrap: wrap;
 }
 
-/* 추가됨: Translate 기본 버튼 */
+/* Added: primary Translate button */
 .tr-btn-primary {
     display: flex;
     align-items: center;
@@ -205,14 +205,14 @@
     cursor: default;
 }
 
-/* 수정됨: 결과 박스 헤더 (텍스트 + Play 버튼을 나란히 배치) */
+/* Modified: result box header (text + Play button placed side by side) */
 .tr-result-header {
     display: flex;
     align-items: flex-start;
     gap: 10px;
 }
 
-/* 수정됨: Play 버튼 — 결과 박스 안 우측에 작은 원형 아이콘으로 통합 */
+/* Modified: Play button — integrated as a small circular icon on the right side of the result box */
 .tr-play-btn {
     flex-shrink: 0;
     width: 32px;
@@ -242,7 +242,7 @@
     cursor: default;
 }
 
-/* 추가됨: Play 버튼 내부 로딩 스피너 */
+/* Added: loading spinner inside the Play button */
 .tr-play-spinner {
     width: 12px;
     height: 12px;
@@ -252,7 +252,7 @@
     animation: tr-spin 0.7s linear infinite;
 }
 
-/* 추가됨: 번역 결과 인라인 오디오 플레이어 */
+/* Added: inline audio player for the translation result */
 .tr-audio {
     display: block;
     width: 100%;
@@ -261,7 +261,7 @@
     margin-top: 10px;
 }
 
-/* 추가됨: Send to TTS 버튼 */
+/* Added: Send to TTS button */
 .tr-btn-tts {
     display: flex;
     align-items: center;
@@ -286,7 +286,7 @@
     box-shadow: 0 4px 12px rgba(90, 122, 249, 0.28);
 }
 
-/* 추가됨: 아이콘 버튼 (복사 등) */
+/* Added: icon button (copy, etc.) */
 .tr-btn-icon {
     width: 40px;
     height: 40px;
@@ -308,7 +308,7 @@
     border-color: #b0bcf8;
 }
 
-/* 추가됨: Clear 버튼 */
+/* Added: Clear button */
 .tr-btn-clear {
     margin-left: auto;
     padding: 9px 16px;
@@ -329,7 +329,7 @@
     background: #fff5f5;
 }
 
-/* 에러 메시지 */
+/* Error message */
 .tr-error {
     display: flex;
     align-items: center;
@@ -343,7 +343,7 @@
     font-size: 14px;
 }
 
-/* 스피너 */
+/* Spinner */
 .tr-spinner {
     width: 15px;
     height: 15px;
@@ -363,7 +363,7 @@
     to { transform: rotate(360deg); }
 }
 
-/* 모바일 */
+/* Mobile */
 @media (max-width: 560px) {
     .tr-card {
         padding: 24px 20px;

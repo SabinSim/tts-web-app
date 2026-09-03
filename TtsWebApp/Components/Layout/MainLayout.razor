@@ -1,7 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager Nav
 
-@* 수정됨: 사이드바 + NavMenu 제거, 미니멀 상단 헤더로 교체 / 탭 네비게이션 추가 *@
+@* Modified: removed sidebar + NavMenu, replaced with a minimal top header / added tab navigation *@
 <div class="app-shell">
 
     <header class="app-header">
@@ -12,7 +12,7 @@
                 <span class="app-logo-text">TTS Web App</span>
             </div>
 
-            @* 수정됨: TTS / Translate / Chat 탭 네비게이션 *@
+            @* Modified: TTS / Translate / Chat tab navigation *@
             <nav class="app-tabs">
                 <a class="app-tab @(IsActive("/") ? "active" : "")" href="/">
                     TTS
@@ -20,7 +20,7 @@
                 <a class="app-tab @(IsActive("/translate") ? "active" : "")" href="/translate">
                     Translate
                 </a>
-                @* 추가됨: AI 대화 탭 *@
+                @* Added: AI chat tab *@
                 <a class="app-tab @(IsActive("/chat") ? "active" : "")" href="/chat">
                     Chat
                 </a>
@@ -43,7 +43,7 @@
 </div>
 
 @code {
-    // 추가됨: 현재 경로와 탭 경로를 비교해 active 클래스 결정
+    // Added: determine the active class by comparing the current path with the tab path
     private bool IsActive(string path)
     {
         var current = Nav.ToBaseRelativePath(Nav.Uri);

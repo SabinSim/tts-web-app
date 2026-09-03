@@ -8,7 +8,7 @@
 
 <div class="chat-card">
 
-    @* ── 설정 화면 ────────────────────────────────────────── *@
+    @* ── Setup screen ────────────────────────────────────────── *@
     @if (!isStarted)
     {
         <div class="chat-setup">
@@ -63,7 +63,7 @@
     }
     else
     {
-        @* ── 채팅 헤더 ────────────────────────────────────── *@
+        @* ── Chat header ────────────────────────────────────── *@
         <div class="chat-header">
             <div class="chat-header-info">
                 <h2>AI Language Chat</h2>
@@ -76,7 +76,7 @@
             <button class="chat-reset-btn" @onclick="Reset">New chat</button>
         </div>
 
-        @* ── 메시지 목록 ──────────────────────────────────── *@
+        @* ── Message list ──────────────────────────────────── *@
         <div class="chat-messages" id="chat-messages">
             @foreach (var msg in messages)
             {
@@ -89,7 +89,7 @@
                     <div class="chat-bubble">
                         <p class="chat-bubble-text">@msg.Content</p>
 
-                        @* 추가됨: 모든 메시지에 TTS 재생 버튼 *@
+                        @* Added: TTS playback button on all messages *@
                         <div class="chat-bubble-actions">
                             @if (ttsLoadingIndex == idx)
                             {
@@ -128,7 +128,7 @@
             <p class="chat-error">⚠ @errorMessage</p>
         }
 
-        @* ── 입력 행 ──────────────────────────────────────── *@
+        @* ── Input row ──────────────────────────────────────── *@
         <div class="chat-input-row">
             <textarea class="chat-input"
                       @bind="userInput"
@@ -160,7 +160,7 @@
     private string  userInput = "";
 
     private List<ChatMessage>          messages  = new();
-    // 추가됨: 인덱스 기반으로 오디오 URL 저장 (user/AI 모두)
+    // Added: store audio URLs keyed by index (for both user/AI)
     private Dictionary<int, string>    audioUrls = new();
 
     private async Task StartChat()
@@ -210,7 +210,7 @@
             StateHasChanged();
             await JS.InvokeVoidAsync("scrollToBottom", "chat-messages");
 
-            // 추가됨: AI 응답 자동 TTS 재생
+            // Added: automatically play TTS for the AI reply
             await AutoPlayTts(messages.Count - 1, reply);
         }
         catch (Exception ex)
@@ -221,7 +221,7 @@
         }
     }
 
-    // 추가됨: TTS 생성 후 자동 재생 + 오디오 URL 저장 (▶ 버튼으로 재재생 가능)
+    // Added: auto-play after TTS generation + store audio URL (allows replay via the ▶ button)
     private async Task AutoPlayTts(int index, string text)
     {
         try
@@ -233,18 +233,18 @@
             audioUrls[index] = $"data:audio/mpeg;base64,{b64}";
             StateHasChanged();
 
-            // 추가됨: JS로 자동 재생 (브라우저 autoplay 정책 우회)
+            // Added: auto-play via JS (workaround for the browser's autoplay policy)
             await JS.InvokeVoidAsync("playAudio", b64);
         }
-        catch { /* TTS 실패해도 채팅은 계속 */ }
+        catch { /* keep the chat going even if TTS fails */ }
     }
 
-    // 추가됨: ▶ 버튼 클릭 시 해당 메시지 TTS 재생
+    // Added: play TTS for the corresponding message when the ▶ button is clicked
     private async Task SpeakMessage(int index)
     {
-        if (ttsLoadingIndex >= 0) return; // 이미 로딩 중이면 무시
+        if (ttsLoadingIndex >= 0) return; // ignore if already loading
 
-        // 이미 생성된 오디오가 있으면 바로 재생
+        // play immediately if audio has already been generated
         if (audioUrls.TryGetValue(index, out var existing))
         {
             var b64 = existing.Replace("data:audio/mpeg;base64,", "");

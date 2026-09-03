@@ -14,16 +14,16 @@
 <Routes />
 <script src="_framework/blazor.web.js"></script>
 <script>
-        // 추가됨: 채팅 메시지 자동 스크롤
+        // Added: automatically scroll chat messages to the bottom
         function scrollToBottom(id) {
             const el = document.getElementById(id);
             if (el) el.scrollTop = el.scrollHeight;
         }
 
-        // 추가됨: base64 오디오 재생 (autoplay 정책 우회)
+        // Added: play base64 audio (workaround for autoplay policy)
         function playAudio(base64) {
             const audio = new Audio('data:audio/mpeg;base64,' + base64);
-            audio.play().catch(() => {}); // 자동재생 차단돼도 무시
+            audio.play().catch(() => {}); // ignore even if autoplay is blocked
         }
     </script>
 </body>

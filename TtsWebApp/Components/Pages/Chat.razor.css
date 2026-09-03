@@ -26,7 +26,7 @@
     font-family: var(--font);
 }
 
-/* ── 설정 화면 ────────────────────────────────────────────── */
+/* ── Setup screen ────────────────────────────────────────────── */
 .chat-setup { display: flex; flex-direction: column; gap: 28px; }
 
 .chat-setup-header h2 {
@@ -76,7 +76,7 @@
 }
 .chat-start-btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
 
-/* ── 채팅 헤더 ────────────────────────────────────────────── */
+/* ── Chat header ────────────────────────────────────────────── */
 .chat-header {
     display: flex; align-items: center;
     justify-content: space-between; margin-bottom: 20px;
@@ -100,7 +100,7 @@
 }
 .chat-reset-btn:hover { color: var(--text-primary); border-color: #b0bcf8; background: var(--bg-hover); }
 
-/* ── 메시지 스크롤 영역 ───────────────────────────────────── */
+/* ── Message scroll area ───────────────────────────────────── */
 .chat-messages {
     display: flex; flex-direction: column; gap: 16px;
     min-height: 260px; max-height: 420px;
@@ -108,7 +108,7 @@
     margin-bottom: 16px; scroll-behavior: smooth;
 }
 
-/* ── 메시지 말풍선 ────────────────────────────────────────── */
+/* ── Message bubbles ────────────────────────────────────────── */
 .chat-bubble-wrap { display: flex; align-items: flex-end; gap: 10px; }
 .chat-bubble-wrap.user { flex-direction: row-reverse; }
 
@@ -136,7 +136,7 @@
 }
 .chat-bubble-wrap.user .chat-bubble-text { color: #fff; }
 
-/* ── 메시지 TTS 버튼 ──────────────────────────────────────── */
+/* ── Message TTS button ──────────────────────────────────────── */
 .chat-bubble-actions {
     display: flex; align-items: center; gap: 8px;
     margin-top: 8px; flex-wrap: wrap;
@@ -189,14 +189,14 @@
     40%           { transform: scale(1.1); opacity: 1; }
 }
 
-/* ── 에러 ─────────────────────────────────────────────────── */
+/* ── Error ─────────────────────────────────────────────────── */
 .chat-error {
     margin: 0 0 12px; padding: 12px 16px;
     background: #fff5f5; border: 1px solid #fecaca;
     border-radius: var(--radius-md); color: var(--danger); font-size: 14px;
 }
 
-/* ── 입력 행 ──────────────────────────────────────────────── */
+/* ── Input row ──────────────────────────────────────────────── */
 .chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
 
 .chat-input {
@@ -234,7 +234,7 @@
 
 @keyframes chat-spin { to { transform: rotate(360deg); } }
 
-/* ── 모바일 ───────────────────────────────────────────────── */
+/* ── Mobile ───────────────────────────────────────────────── */
 @media (max-width: 560px) {
     .chat-card { padding: 24px 20px; }
     .chat-option-btn { font-size: 12px; padding: 8px 6px; }

@@ -3,7 +3,7 @@ using TtsWebApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 추가됨: .NET 10에서 IConfiguration이 Scoped로 등록되면서 ASP.NET Core 내부 서비스와 충돌하는 문제 해결
+// Added: fixes a conflict with internal ASP.NET Core services caused by IConfiguration being registered as Scoped in .NET 10
 builder.Services.AddSingleton<Microsoft.Extensions.Configuration.IConfiguration>(builder.Configuration);
 
 // Razor components (Blazor Server, interactive render mode)
@@ -17,14 +17,14 @@ builder.Services.AddHttpClient<OpenAiTtsService>(client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-// 추가됨: 번역 서비스 등록 (OpenAI Chat API, gpt-4o-mini)
+// Added: register the translation service (OpenAI Chat API, gpt-4o-mini)
 builder.Services.AddHttpClient<TranslationService>(client =>
 {
     client.BaseAddress = new Uri("https://api.openai.com/");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-// 추가됨: AI 대화 서비스 등록 (언어 학습 챗봇)
+// Added: register the AI chat service (language learning chatbot)
 builder.Services.AddHttpClient<ChatService>(client =>
 {
     client.BaseAddress = new Uri("https://api.openai.com/");
@@ -53,11 +53,9 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 // TTS API endpoint that can also be called externally (useful for testing/debugging)
-// MODIFIED: comment translated from Korean to English
 app.MapPost("/api/tts", async (TtsRequest req, OpenAiTtsService tts) =>
 {
     if (string.IsNullOrWhiteSpace(req.Text))
-        // MODIFIED: error message translated from Korean ("text 필드가 필요합니다.") to English
         return Results.BadRequest(new { error = "The 'text' field is required." });
 
     try

@@ -28,10 +28,10 @@
         }
     </p>
 
-    @* 추가됨: 설정 섹션 (모델 선택 + 음성 선택 + 속도 슬라이더) *@
+    @* Added: settings section (model selection + voice selection + speed slider) *@
     <div class="tts-settings">
 
-        @* 추가됨: tts-1 / tts-1-hd 모델 선택 토글 *@
+        @* Added: tts-1 / tts-1-hd model selection toggle *@
         <div class="tts-setting-group">
             <span class="tts-label">Model</span>
             <div class="tts-model-toggle">
@@ -59,7 +59,7 @@
             </select>
         </div>
 
-        @* 추가됨: 재생 속도 슬라이더 (0.25 ~ 4.0, 기본값 1.0) *@
+        @* Added: playback speed slider (0.25 ~ 4.0, default 1.0) *@
         <div class="tts-setting-group tts-speed-group">
             <span class="tts-label">Speed <span class="tts-speed-value">@speed.ToString("0.##")×</span></span>
             <input type="range"
@@ -111,7 +111,7 @@
         <div class="tts-history">
             <div class="tts-history-heading">
                 <h4>History</h4>
-                @* 추가됨: 히스토리 전체 삭제 버튼 *@
+                @* Added: button to clear all history *@
                 <button class="tts-clear-btn" @onclick="ClearHistory">Clear all</button>
             </div>
 
@@ -122,7 +122,7 @@
                         <span class="tts-history-text" title="@item.Text">@Preview(item.Text)</span>
                         <span class="tts-history-voice">
                             <span class="tts-history-badge">@item.Voice</span>
-                            @* 추가됨: 히스토리 항목에 모델명과 속도 표시 *@
+                            @* Added: show model name and speed on history items *@
                             <span class="tts-history-badge tts-badge-model">@item.Model</span>
                             @item.Speed.ToString("0.##")× ·
                             @item.CreatedAt.ToString("HH:mm:ss")
@@ -143,7 +143,7 @@
     private string inputText = "";
     private string selectedVoice = "alloy";
 
-    // 수정됨: Translate 페이지에서 URL 쿼리 파라미터(?text=...)로 전달된 텍스트를 받아 자동으로 채워줌
+    // Modified: receive text passed via URL query parameter (?text=...) from the Translate page and auto-fill it
     protected override void OnInitialized()
     {
         var uri = new Uri(Nav.Uri);
@@ -152,9 +152,9 @@
         if (!string.IsNullOrEmpty(textParam))
             inputText = textParam;
     }
-    // 추가됨: 선택된 모델 상태 (기본값 tts-1)
+    // Added: selected model state (default tts-1)
     private string selectedModel = "tts-1";
-    // 추가됨: 재생 속도 상태 (기본값 1.0)
+    // Added: playback speed state (default 1.0)
     private float speed = 1.0f;
     private bool isLoading;
     private string? audioDataUrl;
@@ -162,7 +162,7 @@
 
     private bool IsOverLimit => inputText.Length > MaxChars;
 
-    // 수정됨: HistoryItem에 Model, Speed 필드 추가
+    // Modified: added Model, Speed fields to HistoryItem
     private record HistoryItem(
         string Text,
         string Voice,
@@ -178,7 +178,7 @@
 
     private void DeleteHistoryItem(HistoryItem item) => history.Remove(item);
 
-    // 추가됨: 히스토리 전체 삭제
+    // Added: clear all history
     private void ClearHistory() => history.Clear();
 
     private async Task GenerateAudio()
@@ -199,11 +199,11 @@
         isLoading = true;
         try
         {
-            // 수정됨: model과 speed를 서비스에 전달
+            // Modified: pass model and speed to the service
             var bytes = await TtsService.SynthesizeSpeechAsync(inputText, selectedVoice, selectedModel, speed);
             audioDataUrl = $"data:audio/mpeg;base64,{Convert.ToBase64String(bytes)}";
 
-            // 수정됨: 히스토리 항목에 Model, Speed 포함
+            // Modified: include Model, Speed in the history item
             history.Insert(0, new HistoryItem(inputText, selectedVoice, selectedModel, speed, audioDataUrl, DateTime.Now));
         }
         catch (Exception ex)

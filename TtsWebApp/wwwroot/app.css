@@ -1,4 +1,4 @@
-/* 추가됨: 전역 기본 스타일 — 기존 Blazor 템플릿 app.css를 이 파일로 교체 */
+/* Added: global base styles — replaces the default Blazor template app.css with this file */
 
 *, *::before, *::after {
     box-sizing: border-box;
@@ -14,7 +14,7 @@ html, body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* 추가됨: Blazor 에러 UI 기본 스타일 유지 */
+/* Added: keep the default Blazor error UI styles */
 #blazor-error-ui {
     background: #fff3cd;
     bottom: 0;
